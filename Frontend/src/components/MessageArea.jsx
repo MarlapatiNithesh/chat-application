@@ -8,13 +8,14 @@ import { FaImages } from "react-icons/fa6";
 import { RiSendPlane2Fill } from "react-icons/ri";
 import EmojiPicker from "emoji-picker-react";
 import SenderMessage from "./SenderMessage";
-import ReceiverMessage from "./ReceiverMessage";
+
 import axios from "axios";
 import { serverUrl } from "../main";
 import { setmessages } from "../redux/messageSlice";
+import ReceiverMessage from "./ReceiverMessage";
 
 function MessageArea() {
-  const { selectedUser, userData,socket } = useSelector((state) => state.user);
+  const { selectedUser, userData, socket } = useSelector((state) => state.user);
   const { messages } = useSelector((state) => state.message);
   const dispatch = useDispatch();
 
@@ -34,7 +35,6 @@ function MessageArea() {
     }
   };
 
-
   useEffect(() => {
     socket?.on("newMessage", (newMessage) => {
       if (newMessage.sender === selectedUser._id) {
@@ -46,9 +46,8 @@ function MessageArea() {
     });
     return () => {
       socket?.off("newMessage");
-    }
-    
-  },[messages,setmessages])
+    };
+  }, [messages, setmessages]);
 
   useEffect(() => {
     return () => {
@@ -57,8 +56,6 @@ function MessageArea() {
       }
     };
   }, [frontendImage]);
-
-
 
   // Fetch messages every time selectedUser changes
   useEffect(() => {
