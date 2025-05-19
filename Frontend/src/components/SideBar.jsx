@@ -24,7 +24,7 @@ function SideBar() {
 
   const handleLogOut = async () => {
     try {
-      await axios.get(${serverUrl}/api/auth/logout, {
+      await axios.get(`${serverUrl}/api/auth/logout`, {
         withCredentials: true,
       });
       dispatch(setUserData(null));
@@ -38,7 +38,7 @@ function SideBar() {
   const handlesearch = async () => {
     try {
       const result = await axios.get(
-        ${serverUrl}/api/user/search?query=${encodeURIComponent(input)},
+        `${serverUrl}/api/user/search?query=${encodeURIComponent(input)}`,
         { withCredentials: true }
       );
       dispatch(setSearchData(result.data));
@@ -55,9 +55,9 @@ function SideBar() {
 
   return (
     <div
-      className={lg:w-[30%] w-full h-full overflow-hidden lg:block bg-slate-200 relative ${
+      className={`lg:w-[30%] w-full h-full overflow-hidden lg:block bg-slate-200 relative ${
         !selectedUser ? "block" : "hidden"
-      }}
+      }`}
     >
       {/* Search Results */}
       {input.length > 0 && (
@@ -209,3 +209,4 @@ function SideBar() {
 }
 
 export default SideBar;
+
