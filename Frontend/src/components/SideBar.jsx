@@ -14,6 +14,10 @@ import {
 } from "../redux/userSlice";
 import { useNavigate } from "react-router-dom";
 
+// Utility Functions
+const getImage = (url) => (url && url.trim() !== "" ? url : dp);
+const getDisplayName = (user) => user?.name || user?.userName;
+
 function SideBar() {
   const { userData, otherUsers, selectedUser, onlineUsers, searchData } =
     useSelector((state) => state.user);
@@ -47,14 +51,17 @@ function SideBar() {
     }
   };
 
+  // Debounced Search
   useEffect(() => {
-    if (input) handlesearch();
+    const delayDebounce = setTimeout(() => {
+      if (input) handlesearch();
+    }, 400);
+
+    return () => clearTimeout(delayDebounce);
   }, [input]);
 
-  const getImage = (url) => (url && url.trim() !== "" ? url : dp);
-
   return (
-    <div
+    <aside
       className={`lg:w-[30%] w-full h-full overflow-hidden lg:block bg-slate-200 relative ${
         !selectedUser ? "block" : "hidden"
       }`}
@@ -63,7 +70,7 @@ function SideBar() {
       {input.length > 0 && (
         <div className="flex absolute top-[250px] bg-white w-full h-[500px] overflow-y-auto items-center pt-[20px] flex-col gap-[10px] z-[150] shadow-lg">
           {searchData?.map((user) => (
-            <div
+            <button
               key={user._id}
               className="w-[95%] h-[70px] flex items-center gap-[20px] px-[10px] hover:bg-[#78cae5] border-b-2 border-gray-400 cursor-pointer"
               onClick={() => {
@@ -76,8 +83,8 @@ function SideBar() {
                 <div className="w-[60px] h-[60px] rounded-full overflow-hidden flex justify-center items-center">
                   <img
                     src={getImage(user.image)}
-                    alt=""
-                    className="h-[100%]"
+                    alt="user profile"
+                    className="h-full"
                     onError={(e) => (e.target.src = dp)}
                   />
                 </div>
@@ -85,10 +92,10 @@ function SideBar() {
                   <span className="w-[12px] h-[12px] rounded-full absolute bottom-[6px] right-[-1px] bg-[#3aff20] shadow-md"></span>
                 )}
               </div>
-              <h1 className="text-gray-800 font-semibold text-[20px]">
-                {user.name || user.userName}
+              <h1 className="text-gray-800 font-semibold text-[20px] truncate">
+                {getDisplayName(user)}
               </h1>
-            </div>
+            </button>
           ))}
         </div>
       )}
@@ -98,21 +105,24 @@ function SideBar() {
         <h1 className="text-white font-bold text-[25px]">chatly</h1>
         <div className="w-full flex justify-between items-center">
           <h1 className="text-gray-800 font-bold text-[25px]">
-            Hii, {userData?.name || "user"}
+            Hii, {getDisplayName(userData) || "user"}
           </h1>
         </div>
 
         {/* Search + Online Users */}
         <div className="w-full flex items-center gap-[20px] overflow-y-auto py-[18px]">
           {!search ? (
-            <div
-              className="w-[60px] h-[60px] mt-[10px] rounded-full overflow-hidden flex justify-center items-center bg-white shadow-lg cursor-pointer"
+            <button
+              className="w-[60px] h-[60px] mt-[10px] rounded-full overflow-hidden flex justify-center items-center bg-white shadow-lg"
               onClick={() => setSearch(true)}
             >
               <IoIosSearch className="w-[25px] h-[25px]" />
-            </div>
+            </button>
           ) : (
-            <form className="w-full h-[60px] bg-white shadow-lg flex items-center gap-[10px] mt-[10px] rounded-full overflow-hidden px-[20px] relative">
+            <form
+              onSubmit={(e) => e.preventDefault()}
+              className="w-full h-[60px] bg-white shadow-lg flex items-center gap-[10px] mt-[10px] rounded-full overflow-hidden px-[20px] relative"
+            >
               <IoIosSearch className="w-[25px] h-[25px]" />
               <input
                 type="text"
@@ -135,7 +145,7 @@ function SideBar() {
             otherUsers?.map(
               (user) =>
                 onlineUsers?.includes(user._id) && (
-                  <div
+                  <button
                     key={user._id}
                     className="relative rounded-full shadow-lg bg-white flex justify-center items-center mt-[10px] cursor-pointer"
                     onClick={() => dispatch(setSelectedUser(user))}
@@ -143,13 +153,13 @@ function SideBar() {
                     <div className="w-[60px] h-[60px] rounded-full overflow-hidden flex justify-center items-center">
                       <img
                         src={getImage(user.image)}
-                        alt=""
-                        className="h-[100%]"
+                        alt="online user"
+                        className="h-full"
                         onError={(e) => (e.target.src = dp)}
                       />
                     </div>
                     <span className="w-[12px] h-[12px] rounded-full absolute bottom-[6px] right-[-1px] bg-[#3aff20] shadow-md"></span>
-                  </div>
+                  </button>
                 )
             )}
         </div>
@@ -158,7 +168,7 @@ function SideBar() {
       {/* All Users */}
       <div className="w-full h-[calc(100%-420px)] overflow-auto pb-[100px] flex flex-col gap-[20px] items-center mt-[20px]">
         {otherUsers?.map((user) => (
-          <div
+          <button
             key={user._id}
             className="w-[95%] h-[60px] flex items-center gap-[20px] shadow-lg bg-white rounded-full hover:bg-[#78cae5] cursor-pointer"
             onClick={() => dispatch(setSelectedUser(user))}
@@ -167,8 +177,8 @@ function SideBar() {
               <div className="w-[60px] h-[60px] rounded-full overflow-hidden flex justify-center items-center">
                 <img
                   src={getImage(user.image)}
-                  alt=""
-                  className="h-[100%]"
+                  alt="user"
+                  className="h-full"
                   onError={(e) => (e.target.src = dp)}
                 />
               </div>
@@ -176,37 +186,36 @@ function SideBar() {
                 <span className="w-[12px] h-[12px] rounded-full absolute bottom-[6px] right-[-1px] bg-[#3aff20] shadow-md"></span>
               )}
             </div>
-            <h1 className="text-gray-800 font-semibold text-[20px]">
-              {user.name || user.userName}
+            <h1 className="text-gray-800 font-semibold text-[20px] truncate">
+              {getDisplayName(user)}
             </h1>
-          </div>
+          </button>
         ))}
       </div>
 
       {/* Fixed Profile & Logout Buttons */}
       <div className="w-full absolute bottom-0 left-0 px-[10px] py-[15px] flex justify-between items-center bg-slate-200">
-        <div
-          className="w-[60px] h-[60px] rounded-full overflow-hidden flex justify-center items-center bg-white shadow-lg cursor-pointer"
+        <button
+          className="w-[60px] h-[60px] rounded-full overflow-hidden flex justify-center items-center bg-white shadow-lg"
           onClick={() => navigate("/profile")}
         >
           <img
             src={getImage(userData?.image)}
-            alt=""
-            className="h-[100%]"
+            alt="your profile"
+            className="h-full"
             onError={(e) => (e.target.src = dp)}
           />
-        </div>
+        </button>
 
-        <div
-          className="w-[60px] h-[60px] rounded-full flex justify-center items-center bg-[#20c7ff] text-gray-700 shadow-lg cursor-pointer"
+        <button
+          className="w-[60px] h-[60px] rounded-full flex justify-center items-center bg-[#20c7ff] text-gray-700 shadow-lg"
           onClick={handleLogOut}
         >
           <BiLogOutCircle className="w-[25px] h-[25px]" />
-        </div>
+        </button>
       </div>
-    </div>
+    </aside>
   );
 }
 
 export default SideBar;
-

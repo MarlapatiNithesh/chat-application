@@ -5,18 +5,21 @@ import bcrypt from "bcryptjs";
 export const signUp = async (req, res) => {
   try {
     const { userName, email, password } = req.body;
+
     const checkUserByUserName = await User.findOne({ userName });
     if (checkUserByUserName) {
-      return res.status(400).json({ message: "userName already exist" });
+      return res.status(400).json({ message: "userName already exists" });
     }
+
     const checkUserByEmail = await User.findOne({ email });
     if (checkUserByEmail) {
-      return res.status(400).json({ message: "email already exist" });
+      return res.status(400).json({ message: "email already exists" });
     }
+
     if (password.length < 6) {
       return res
         .status(400)
-        .json({ message: "password must be at least 6 characters" });
+        .json({ message: "Password must be at least 6 characters long" });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -31,41 +34,43 @@ export const signUp = async (req, res) => {
 
     res.cookie("token", token, {
       httpOnly: true,
-      maxAge: 7 * 24 * 60 * 60 * 1000,
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
       sameSite: "Lax",
       secure: true,
     });
 
     return res.status(201).json(user);
   } catch (error) {
-    return res.status(500).json({ message: `signup error ${error}` });
+    return res.status(500).json({ message: `Signup error: ${error.message}` });
   }
 };
+
 export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
+
     const user = await User.findOne({ email });
     if (!user) {
-      return res.status(400).json({ message: "user does not exist" });
+      return res.status(400).json({ message: "User does not exist" });
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return res.status(400).json({ message: "incorrect password" });
+      return res.status(400).json({ message: "Incorrect password" });
     }
 
     const token = await genToken(user._id);
 
     res.cookie("token", token, {
       httpOnly: true,
-      maxAge: 7 * 24 * 60 * 60 * 1000,
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
       sameSite: "Lax",
       secure: true,
     });
 
     return res.status(200).json(user);
   } catch (error) {
-    return res.status(500).json({ message: `login error ${error}` });
+    return res.status(500).json({ message: `Login error: ${error.message}` });
   }
 };
 
@@ -73,13 +78,13 @@ export const logOut = async (req, res) => {
   try {
     res.clearCookie("token", {
       httpOnly: true,
-      secure: true,         // Only send cookie over HTTPS
-      sameSite: "lax",      // Helps prevent CSRF attacks but allows some cross-site requests
-      path: "/",            // Clear cookie on root path
+      secure: true,
+      sameSite: "Lax", // ✅ FIXED: was "lax"
+      path: "/",
     });
+
     return res.status(200).json({ message: "Logged out successfully" });
   } catch (error) {
     return res.status(500).json({ message: `Logout error: ${error.message}` });
   }
 };
-
