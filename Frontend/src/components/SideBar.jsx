@@ -54,6 +54,18 @@ function SideBar() {
 
   const getImage = (url) => (url && url.trim() !== "" ? url : dp);
 
+  const reorderedUsers = () => {
+    if (!otherUsers || !userData) return otherUsers || [];
+
+    const others = otherUsers.filter((user) => user._id !== userData._id);
+    const centerIndex = Math.floor(others.length / 2);
+    return [
+      ...others.slice(0, centerIndex),
+      userData,
+      ...others.slice(centerIndex),
+    ];
+  };
+
   return (
     <div
       className={`lg:w-[30%] w-full h-full overflow-hidden lg:block bg-slate-200 relative ${
@@ -158,10 +170,12 @@ function SideBar() {
 
       {/* All Users */}
       <div className="w-full h-[calc(100%-420px)] overflow-auto pb-[100px] flex flex-col gap-[20px] items-center mt-[20px]">
-        {otherUsers?.map((user) => (
+        {reorderedUsers().map((user) => (
           <div
             key={user._id}
-            className="w-[95%] h-[60px] flex items-center gap-[20px] shadow-lg bg-white rounded-full hover:bg-[#78cae5] cursor-pointer"
+            className={`w-[95%] h-[60px] flex items-center gap-[20px] shadow-lg bg-white rounded-full hover:bg-[#78cae5] cursor-pointer ${
+              user._id === userData?._id ? "border-2 border-[#20c7ff]" : ""
+            }`}
             onClick={() => dispatch(setSelectedUser(user))}
           >
             <div className="relative rounded-full shadow-lg bg-white flex justify-center items-center mt-[10px]">
@@ -179,6 +193,7 @@ function SideBar() {
             </div>
             <h1 className="text-gray-800 font-semibold text-[20px]">
               {user.name || user.userName}
+              {user._id === userData?._id && " (You)"}
             </h1>
           </div>
         ))}
