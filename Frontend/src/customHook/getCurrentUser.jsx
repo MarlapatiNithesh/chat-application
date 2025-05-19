@@ -20,6 +20,8 @@ const useGetCurrentUser = () => {
       } catch (error) {
         dispatch(clearUserData()); // reset user & stop loading
         console.error("Error fetching current user:", error);
+      } finally {
+        dispatch(setLoading(false)); // stop loading
       }
     };
 
