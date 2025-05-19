@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import dp from "../assets/dp.png";
@@ -25,12 +24,12 @@ function SideBar() {
 
   const handleLogOut = async () => {
     try {
-      await axios.get(`${serverUrl}/api/auth/logout`, {
+      await axios.get(${serverUrl}/api/auth/logout, {
         withCredentials: true,
       });
       dispatch(setUserData(null));
       dispatch(setOtherUsers(null));
-      window.location.href = "/login";
+      navigate("/login");
     } catch (error) {
       console.log(error);
     }
@@ -39,7 +38,7 @@ function SideBar() {
   const handlesearch = async () => {
     try {
       const result = await axios.get(
-        `${serverUrl}/api/user/search?query=${encodeURIComponent(input)}`,
+        ${serverUrl}/api/user/search?query=${encodeURIComponent(input)},
         { withCredentials: true }
       );
       dispatch(setSearchData(result.data));
@@ -54,23 +53,11 @@ function SideBar() {
 
   const getImage = (url) => (url && url.trim() !== "" ? url : dp);
 
-  const reorderedUsers = () => {
-    if (!otherUsers || !userData) return otherUsers || [];
-
-    const others = otherUsers.filter((user) => user._id !== userData._id);
-    const centerIndex = Math.floor(others.length / 2);
-    return [
-      ...others.slice(0, centerIndex),
-      userData,
-      ...others.slice(centerIndex),
-    ];
-  };
-
   return (
     <div
-      className={`lg:w-[30%] w-full h-full overflow-hidden lg:block bg-slate-200 relative ${
+      className={lg:w-[30%] w-full h-full overflow-hidden lg:block bg-slate-200 relative ${
         !selectedUser ? "block" : "hidden"
-      }`}
+      }}
     >
       {/* Search Results */}
       {input.length > 0 && (
@@ -170,12 +157,10 @@ function SideBar() {
 
       {/* All Users */}
       <div className="w-full h-[calc(100%-420px)] overflow-auto pb-[100px] flex flex-col gap-[20px] items-center mt-[20px]">
-        {reorderedUsers().map((user) => (
+        {otherUsers?.map((user) => (
           <div
             key={user._id}
-            className={`w-[95%] h-[60px] flex items-center gap-[20px] shadow-lg bg-white rounded-full hover:bg-[#78cae5] cursor-pointer ${
-              user._id === userData?._id ? "border-2 border-[#20c7ff]" : ""
-            }`}
+            className="w-[95%] h-[60px] flex items-center gap-[20px] shadow-lg bg-white rounded-full hover:bg-[#78cae5] cursor-pointer"
             onClick={() => dispatch(setSelectedUser(user))}
           >
             <div className="relative rounded-full shadow-lg bg-white flex justify-center items-center mt-[10px]">
@@ -193,7 +178,6 @@ function SideBar() {
             </div>
             <h1 className="text-gray-800 font-semibold text-[20px]">
               {user.name || user.userName}
-              {user._id === userData?._id && " (You)"}
             </h1>
           </div>
         ))}
