@@ -13,157 +13,203 @@ import {
   setUserData,
 } from "../redux/userSlice";
 import { useNavigate } from "react-router-dom";
+
 function SideBar() {
-  let { userData, otherUsers, selectedUser, onlineUsers, searchData } =
+  const { userData, otherUsers, selectedUser, onlineUsers, searchData } =
     useSelector((state) => state.user);
-  let [search, setSearch] = useState(false);
-  let [input, setInput] = useState("");
-  let dispatch = useDispatch();
-  let navigate = useNavigate();
+  const [search, setSearch] = useState(false);
+  const [input, setInput] = useState("");
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+
   const handleLogOut = async () => {
     try {
-      let result = await axios.get(`${serverUrl}/api/auth/logout`, {
+      await axios.get(`${serverUrl}/api/auth/logout`, {
         withCredentials: true,
       });
       dispatch(setUserData(null));
       dispatch(setOtherUsers(null));
       navigate("/login");
     } catch (error) {
-      console.log(error);
+      console.error(error);
     }
   };
 
   const handlesearch = async () => {
     try {
-      let result = await axios.get(
+      if (!input) return;
+      const result = await axios.get(
         `${serverUrl}/api/user/search?query=${input}`,
         { withCredentials: true }
       );
       dispatch(setSearchData(result.data));
     } catch (error) {
-      console.log(error);
+      console.error(error);
     }
   };
 
   useEffect(() => {
-    if (input) {
-      handlesearch();
-    }
+    handlesearch();
   }, [input]);
+
+  // Sidebar visibility: 
+  // On large screens, sidebar always visible
+  // On smaller screens, hide sidebar if a user is selected to maximize chat area
+  const isSidebarVisible = window.innerWidth >= 1024 || !selectedUser;
+
   return (
     <div
-      className={`lg:w-[30%] w-full h-full overflow-hidden lg:block bg-slate-200  relative ${
-        !selectedUser ? "block" : "hidden"
-      }`}
+      className={`${
+        isSidebarVisible ? "block" : "hidden"
+      } lg:block lg:w-1/3 w-full h-full bg-slate-200 relative`}
     >
-      <div
-        className="w-[60px] h-[60px] mt-[10px] rounded-full overflow-hidden flex justify-center items-center bg-[#20c7ff] shadow-gray-500 text-gray-700 cursor-pointer shadow-lg fixed bottom-[20px] left-[10px]"
+      {/* Logout Button */}
+      <button
+        aria-label="Logout"
+        className="fixed bottom-5 left-3 z-50 w-14 h-14 rounded-full bg-[#20c7ff] flex justify-center items-center shadow-lg shadow-gray-500 text-gray-700 cursor-pointer"
         onClick={handleLogOut}
       >
-        <BiLogOutCircle className="w-[25px] h-[25px]" />
-      </div>
-      {input.length > 0 && (
-        <div className="flex absolute top-[250px] bg-[white] w-full h-[500px] overflow-y-auto items-center pt-[20px] flex-col gap-[10px] z-[150] shadow-lg">
-          {searchData?.map((user) => (
-            <div
-              className="w-[95%] h-[70px] flex items-center gap-[20px]  px-[10px] hover:bg-[#78cae5] border-b-2 border-gray-400 cursor-pointer"
-              onClick={() => {
-                dispatch(setSelectedUser(user));
-                setInput("");
-                setSearch(false);
-              }}
-            >
-              <div className="relative rounded-full bg-white  flex justify-center items-center ">
-                <div className="w-[60px] h-[60px]   rounded-full overflow-hidden flex justify-center items-center ">
-                  <img src={user.image || dp} alt="" className="h-[100%]" />
+        <BiLogOutCircle className="w-6 h-6" />
+      </button>
+
+      {/* Search Result Dropdown */}
+      {input.length > 0 && search && (
+        <div className="absolute top-60 left-0 right-0 max-h-[400px] bg-white overflow-y-auto shadow-lg z-40 px-4 py-3 flex flex-col gap-3 rounded-b-lg">
+          {searchData?.length === 0 ? (
+            <p className="text-center text-gray-500">No users found</p>
+          ) : (
+            searchData?.map((user) => (
+              <div
+                key={user._id}
+                className="flex items-center gap-4 p-2 hover:bg-[#78cae5] cursor-pointer rounded-lg"
+                onClick={() => {
+                  dispatch(setSelectedUser(user));
+                  setInput("");
+                  setSearch(false);
+                }}
+              >
+                <div className="relative w-14 h-14 rounded-full overflow-hidden bg-white flex justify-center items-center">
+                  <img
+                    src={user.image || dp}
+                    alt={user.name || user.userName}
+                    className="object-cover w-full h-full"
+                  />
+                  {onlineUsers?.includes(user._id) && (
+                    <span className="absolute bottom-1 right-1 w-3 h-3 rounded-full bg-green-500 shadow-md shadow-gray-500"></span>
+                  )}
                 </div>
-                {onlineUsers?.includes(user._id) && (
-                  <span className="w-[12px] h-[12px] rounded-full absolute bottom-[6px] right-[-1px] bg-[#3aff20] shadow-gray-500 shadow-md"></span>
-                )}
+                <h2 className="font-semibold text-gray-800 text-lg">
+                  {user.name || user.userName}
+                </h2>
               </div>
-              <h1 className="text-gray-800 font-semibold text-[20px]">
-                {user.name || user.userName}
-              </h1>
-            </div>
-          ))}
+            ))
+          )}
         </div>
       )}
 
-      <div className="w-full h-[300px] bg-[#20c7ff] rounded-b-[30%] shadow-gray-400 shadow-lg flex flex-col justify-center px-[20px] ">
-        <h1 className="text-white font-bold text-[25px]">chatly</h1>
-        <div className="w-full flex justify-between items-center">
-          <h1 className="text-gray-800 font-bold text-[25px]">
-            Hii , {userData.name || "user"}
-          </h1>
-          <div
-            className="w-[60px] h-[60px] rounded-full overflow-hidden flex justify-center items-center bg-white cursor-pointer shadow-gray-500 shadow-lg"
+      {/* Sidebar Header */}
+      <div className="bg-[#20c7ff] rounded-b-[30%] shadow-lg shadow-gray-400 p-5 flex flex-col justify-center px-6">
+        <h1 className="text-white font-bold text-3xl mb-4 select-none">chatly</h1>
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-gray-800 font-bold text-2xl select-none">
+            Hii, {userData?.name || "user"}
+          </h2>
+          <button
+            aria-label="Go to profile"
+            className="w-14 h-14 rounded-full overflow-hidden shadow-lg shadow-gray-500 bg-white cursor-pointer"
             onClick={() => navigate("/profile")}
           >
-            <img src={userData.image || dp} alt="" className="h-[100%]" />
-          </div>
+            <img
+              src={userData?.image || dp}
+              alt="User profile"
+              className="object-cover w-full h-full"
+            />
+          </button>
         </div>
-        <div className="w-full  flex items-center gap-[20px] overflow-y-auto py-[18px]">
+
+        {/* Search Bar */}
+        <div className="flex items-center gap-4 overflow-x-auto pb-2">
           {!search && (
-            <div
-              className="w-[60px] h-[60px] mt-[10px] rounded-full overflow-hidden flex justify-center items-center bg-white shadow-gray-500 cursor-pointer shadow-lg"
+            <button
+              aria-label="Open search"
+              className="w-14 h-14 rounded-full bg-white shadow-lg shadow-gray-500 flex justify-center items-center cursor-pointer"
               onClick={() => setSearch(true)}
             >
-              <IoIosSearch className="w-[25px] h-[25px]" />
-            </div>
+              <IoIosSearch className="w-6 h-6" />
+            </button>
           )}
-
           {search && (
-            <form className="w-full h-[60px] bg-white shadow-gray-500 shadow-lg flex items-center gap-[10px] mt-[10px] rounded-full overflow-hidden px-[20px] relative">
-              <IoIosSearch className="w-[25px] h-[25px]" />
+            <form
+              onSubmit={(e) => e.preventDefault()}
+              className="flex items-center gap-2 bg-white rounded-full px-5 py-3 shadow-lg shadow-gray-500 flex-grow"
+            >
+              <IoIosSearch className="w-6 h-6 text-gray-600" />
               <input
                 type="text"
-                placeholder="search users..."
-                className="w-full h-full p-[10px] text-[17px] outline-none border-0 "
+                placeholder="Search users..."
+                className="flex-grow outline-none border-0 text-base"
                 onChange={(e) => setInput(e.target.value)}
                 value={input}
+                autoFocus
               />
-              <RxCross2
-                className="w-[25px] h-[25px] cursor-pointer"
-                onClick={() => setSearch(false)}
-              />
+              <button
+                type="button"
+                aria-label="Close search"
+                onClick={() => {
+                  setSearch(false);
+                  setInput("");
+                }}
+              >
+                <RxCross2 className="w-6 h-6 cursor-pointer text-gray-600" />
+              </button>
             </form>
           )}
+
+          {/* Online users preview (only when not searching) */}
           {!search &&
-            otherUsers?.map(
-              (user) =>
-                onlineUsers?.includes(user._id) && (
-                  <div
-                    className="relative rounded-full shadow-gray-500 bg-white shadow-lg flex justify-center items-center mt-[10px] cursor-pointer"
-                    onClick={() => dispatch(setSelectedUser(user))}
-                  >
-                    <div className="w-[60px] h-[60px]   rounded-full overflow-hidden flex justify-center items-center ">
-                      <img src={user.image || dp} alt="" className="h-[100%]" />
-                    </div>
-                    <span className="w-[12px] h-[12px] rounded-full absolute bottom-[6px] right-[-1px] bg-[#3aff20] shadow-gray-500 shadow-md"></span>
-                  </div>
-                )
-            )}
+            otherUsers
+              ?.filter((user) => onlineUsers?.includes(user._id))
+              .map((user) => (
+                <button
+                  key={user._id}
+                  onClick={() => dispatch(setSelectedUser(user))}
+                  className="relative w-14 h-14 rounded-full overflow-hidden bg-white shadow-lg shadow-gray-500 flex justify-center items-center cursor-pointer"
+                  aria-label={`Chat with ${user.name || user.userName}`}
+                >
+                  <img
+                    src={user.image || dp}
+                    alt={user.name || user.userName}
+                    className="object-cover w-full h-full"
+                  />
+                  <span className="absolute bottom-1 right-1 w-3 h-3 rounded-full bg-green-500 shadow-md shadow-gray-500"></span>
+                </button>
+              ))}
         </div>
       </div>
 
-      <div className="w-full h-[50%] overflow-auto flex flex-col gap-[20px] items-center mt-[20px]">
+      {/* Users List */}
+      <div className="h-[calc(100vh-20rem)] overflow-y-auto mt-5 px-6 flex flex-col gap-4">
         {otherUsers?.map((user) => (
-          <div
-            className="w-[95%] h-[60px] flex items-center gap-[20px] shadow-gray-500 bg-white shadow-lg rounded-full hover:bg-[#78cae5] cursor-pointer"
+          <button
+            key={user._id}
             onClick={() => dispatch(setSelectedUser(user))}
+            className="flex items-center gap-4 bg-white rounded-full shadow-lg shadow-gray-500 p-2 hover:bg-[#78cae5] transition-colors duration-200"
+            aria-label={`Select chat with ${user.name || user.userName}`}
           >
-            <div className="relative rounded-full shadow-gray-500 bg-white shadow-lg flex justify-center items-center mt-[10px]">
-              <div className="w-[60px] h-[60px]   rounded-full overflow-hidden flex justify-center items-center ">
-                <img src={user.image || dp} alt="" className="h-[100%]" />
-              </div>
+            <div className="relative w-14 h-14 rounded-full overflow-hidden bg-white shadow-lg shadow-gray-500 flex justify-center items-center">
+              <img
+                src={user.image || dp}
+                alt={user.name || user.userName}
+                className="object-cover w-full h-full"
+              />
               {onlineUsers?.includes(user._id) && (
-                <span className="w-[12px] h-[12px] rounded-full absolute bottom-[6px] right-[-1px] bg-[#3aff20] shadow-gray-500 shadow-md"></span>
+                <span className="absolute bottom-1 right-1 w-3 h-3 rounded-full bg-green-500 shadow-md shadow-gray-500"></span>
               )}
             </div>
-            <h1 className="text-gray-800 font-semibold text-[20px]">
+            <h2 className="text-gray-800 font-semibold text-lg">
               {user.name || user.userName}
-            </h1>
-          </div>
+            </h2>
+          </button>
         ))}
       </div>
     </div>

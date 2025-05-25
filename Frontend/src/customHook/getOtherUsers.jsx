@@ -1,12 +1,12 @@
 import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import axios from "axios";
-import {  clearUserData, setOtherUsers } from "../redux/userSlice";
+import { clearUserData, setOtherUsers } from "../redux/userSlice";
 import { serverUrl } from "../main";
 
 const useGetOtherUsers = () => {
   const dispatch = useDispatch();
-  const { otherUsers } = useSelector((state) => state.user);
+  const { otherUsers, userData } = useSelector((state) => state.user);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -18,14 +18,15 @@ const useGetOtherUsers = () => {
         dispatch(setOtherUsers(response.data));
       } catch (error) {
         dispatch(clearUserData()); // reset user & stop loading
-        console.error("Error fetching current user:", error);
+        console.error("Error fetching other users:", error);
       }
     };
 
-    if (!otherUsers) {
+    // Only fetch if userData exists and otherUsers is not loaded yet
+    if (userData?._id && !otherUsers) {
       fetchUser();
     }
-  }, []);
+  }, [userData, otherUsers, dispatch]);
 };
 
 export default useGetOtherUsers;
