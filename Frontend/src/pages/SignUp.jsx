@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { serverUrl } from "../main";
 import { useDispatch } from "react-redux";
 import { setUserData } from "../redux/userSlice";
+import useGetOtherUsers from "../customHook/getOtherUsers";
 
 function SignUp() {
   const navigate = useNavigate();
@@ -15,6 +16,7 @@ function SignUp() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState("");
+  const { refetch: refetchOtherUsers } = useGetOtherUsers();
 
   const handleSignUp = async (e) => {
     e.preventDefault();
@@ -34,6 +36,9 @@ function SignUp() {
       );
 
       dispatch(setUserData(response.data));
+       if (refetchOtherUsers) {
+        refetchOtherUsers();
+      }
       navigate("/profile");
 
       setUserName("");
