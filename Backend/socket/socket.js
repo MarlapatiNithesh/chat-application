@@ -10,7 +10,7 @@ const server = http.createServer(app);
 
 const io = new Server(server,{
     cors: {
-        origin: "http://3.109.210.131:5174",
+        origin: "http://65.0.97.103:5174",
     }
 })
 
