@@ -24,19 +24,19 @@ jobs:
             echo "Starting deployment of Chat Application..."
 
             # Pull latest Docker images from Docker Hub
-            docker pull nitheesh2005/chat-backend:latest
-            docker pull nitheesh2005/chat-frontend:latest
+            docker pull nitheesh2005/chat-application-backend:latest
+            docker pull nitheesh2005/chat-application-frontend:latest
 
             # Stop and remove old containers (ignore errors if not running)
-            docker stop chat-backend || echo "chat-backend container not running"
-            docker rm chat-backend || echo "chat-backend container not found"
+            docker stop chat-application-backend || echo "chat-application-backend container not running"
+            docker rm chat-application-backend || echo "chat-application-backend container not found"
 
-            docker stop chat-frontend || echo "chat-frontend container not running"
-            docker rm chat-frontend || echo "chat-frontend container not found"
+            docker stop chat-application-frontend || echo "chat-application-frontend container not running"
+            docker rm chat-application-frontend || echo "chat-application-frontend container not found"
 
             # Run new containers with port mappings and restart policy
-            docker run -d --name chat-backend -p 3001:3000 --restart unless-stopped nitheesh2005/chat-backend:latest
+            docker run -d --name chat-application-backend -p 3001:3000 --restart unless-stopped nitheesh2005/chat-application-backend:latest
 
-            docker run -d --name chat-frontend -p 5174:5173 --restart unless-stopped nitheesh2005/chat-frontend:latest
+            docker run -d --name chat-application-frontend -p 5174:5173 --restart unless-stopped nitheesh2005/chat-application-frontend:latest
 
             echo "Deployment completed successfully."

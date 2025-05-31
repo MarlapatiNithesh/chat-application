@@ -30,7 +30,7 @@ jobs:
           context: ./Backend
           file: ./Backend/DockerFile
           push: true
-          tags: nitheesh2005/chat-backend:latest
+          tags: nitheesh2005/chat-application-backend:latest
 
       - name: Build and Push Frontend Image
         uses: docker/build-push-action@v4
@@ -38,4 +38,4 @@ jobs:
           context: ./Frontend
           file: ./Frontend/DockerFile
           push: true
-          tags: nitheesh2005/chat-frontend:latest
+          tags: nitheesh2005/chat-application-frontend:latest
