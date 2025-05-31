@@ -1,0 +1,35 @@
+# syntax=docker/dockerfile:1
+
+# --- Stage 1: Build the Vite App ---
+FROM node:18-alpine AS builder
+
+# Set working directory
+WORKDIR /app
+
+# Copy dependency files and install dependencies
+COPY package*.json ./
+RUN npm ci
+
+# Copy all project files, including env files
+COPY . .
+
+# Build the Vite app (uses .env, .env.production, etc.)
+RUN npm run build
+
+# --- Stage 2: Serve the built files using serve ---
+FROM node:18-alpine AS runner
+
+# Set working directory
+WORKDIR /app
+
+# Install serve to run the static site
+RUN npm install -g serve
+
+# Copy only the built output
+COPY --from=builder /app/dist ./dist
+
+# Expose the default Vite build port or your custom port
+EXPOSE 5173
+
+# Start the server to serve static files
+CMD ["serve", "-s", "dist", "-l", "5173"]

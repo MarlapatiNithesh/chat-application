@@ -1,0 +1,42 @@
+name: Docker CD
+
+on:
+  workflow_run:
+    workflows: ["Docker CI"]
+    types:
+      - completed
+
+jobs:
+  deploy:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: self-hosted  # Make sure your runner is properly tagged and available
+
+    steps:
+      - name: Deploy to EC2 via SSH
+        uses: appleboy/ssh-action@v0.1.7
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          port: 22
+          debug: true
+          script: |
+            echo "Starting deployment of Chat Application..."
+
+            # Pull latest Docker images from Docker Hub
+            docker pull nitheesh2005/chat-backend:latest
+            docker pull nitheesh2005/chat-frontend:latest
+
+            # Stop and remove old containers (ignore errors if not running)
+            docker stop chat-backend || echo "chat-backend container not running"
+            docker rm chat-backend || echo "chat-backend container not found"
+
+            docker stop chat-frontend || echo "chat-frontend container not running"
+            docker rm chat-frontend || echo "chat-frontend container not found"
+
+            # Run new containers with port mappings and restart policy
+            docker run -d --name chat-backend -p 3001:3000 --restart unless-stopped nitheesh2005/chat-backend:latest
+
+            docker run -d --name chat-frontend -p 5174:5173 --restart unless-stopped nitheesh2005/chat-frontend:latest
+
+            echo "Deployment completed successfully."

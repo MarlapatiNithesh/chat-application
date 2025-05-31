@@ -16,7 +16,7 @@ const port = process.env.PORT || 5000;
 
 // Middlewares
 app.use(cors({
-    origin: "https://chat-application-frontend-udje.onrender.com",
+    origin: "http://3.109.210.131:5174",
     credentials: true
 }));
 app.use(express.json());

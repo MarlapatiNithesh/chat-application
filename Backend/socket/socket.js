@@ -10,7 +10,7 @@ const server = http.createServer(app);
 
 const io = new Server(server,{
     cors: {
-        origin: "https://chat-application-frontend-udje.onrender.com",
+        origin: "http://3.109.210.131:5174",
     }
 })
 

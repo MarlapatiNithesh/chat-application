@@ -1,0 +1,32 @@
+version: "3.9"
+
+services:
+  backend:
+    container_name: chat-backend
+    build:
+      context: ./Backend
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3000"
+    networks:
+      - chat-network
+    restart: always
+    command: npm run start
+
+  frontend:
+    container_name: chat-frontend
+    build:
+      context: ./Frontend
+      dockerfile: Dockerfile
+    ports:
+      - "5174:5173"
+    networks:
+      - chat-network
+    depends_on:
+      - backend
+    restart: always
+    command: serve -s dist -l 5173
+
+networks:
+  chat-network:
+    driver: bridge
