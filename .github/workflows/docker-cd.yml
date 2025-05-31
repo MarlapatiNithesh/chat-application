@@ -9,7 +9,7 @@ on:
 jobs:
   deploy:
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
-    runs-on: self-hosted  # Make sure your runner is properly tagged and available
+    runs-on: ubuntu-latest  # Make sure your runner is properly tagged and available
 
     steps:
       - name: Deploy to EC2 via SSH
