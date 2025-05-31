@@ -8,7 +8,8 @@
   "main": "index.js",
   "scripts": {
     "dev": "nodemon index.js",
-    "start": "node index.js"
+    "start": "node index.js",
+    "build": "echo 'No build step needed'"
   },
   "dependencies": {
     "bcryptjs": "^3.0.2",
