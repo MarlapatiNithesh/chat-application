@@ -28,7 +28,7 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           context: ./Backend
-          file: ./Backend/DockerFile
+          file: ./Backend/Dockerfile
           push: true
           tags: nitheesh2005/chat-application-backend:latest
 
@@ -36,6 +36,6 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           context: ./Frontend
-          file: ./Frontend/DockerFile
+          file: ./Frontend/Dockerfile
           push: true
           tags: nitheesh2005/chat-application-frontend:latest

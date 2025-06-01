@@ -5,7 +5,7 @@ services:
     container_name: chat-application-backend
     build:
       context: ./Backend
-      dockerfile: DockerFile
+      dockerfile: Dockerfile
     ports:
       - "3000:3000"
     networks:
@@ -17,7 +17,7 @@ services:
     container_name: chat-application-frontend
     build:
       context: ./Frontend
-      dockerfile: DockerFile
+      dockerfile: Dockerfile
     ports:
       - "5173:5173"
     networks:
