@@ -9,7 +9,7 @@ services:
     ports:
       - "3000:3000"
     env_file:
-      - ./Backend/.env    # Pass your env vars here at runtime
+      - ./Backend/.env  # Make sure this path and file exist and have correct vars
     restart: always
     command: npm start
     networks:
