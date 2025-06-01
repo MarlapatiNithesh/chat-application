@@ -7,9 +7,9 @@ services:
       context: ./Backend
       dockerfile: Dockerfile
     ports:
-      - "3000:3000"
+      - "3001:3000"  # Local port 3001 → Container port 3000
     env_file:
-      - ./Backend/.env  # Make sure this path and file exist and have correct vars
+      - ./Backend/.env
     restart: always
     command: npm start
     networks:
@@ -21,7 +21,7 @@ services:
       context: ./Frontend
       dockerfile: Dockerfile
     ports:
-      - "5173:5173"
+      - "5174:5173"  # Local port 5174 → Container port 5173
     depends_on:
       - backend
     restart: always

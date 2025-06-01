@@ -14,7 +14,7 @@ const port = process.env.PORT || 3000;  // Use 3000 by default to match Dockerfi
 
 // Middlewares
 app.use(cors({
-    origin: "http://65.0.97.103:5173", // Your frontend URL
+    origin: "http://65.0.97.103:5174", // Your frontend URL
     credentials: true
 }));
 app.use(express.json());
