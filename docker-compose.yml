@@ -8,10 +8,12 @@ services:
       dockerfile: Dockerfile
     ports:
       - "3000:3000"
+    env_file:
+      - ./Backend/.env    # Pass your env vars here at runtime
+    restart: always
+    command: npm start
     networks:
       - chat-application-network
-    restart: always
-    command: npm run start
 
   frontend:
     container_name: chat-application-frontend
@@ -20,12 +22,12 @@ services:
       dockerfile: Dockerfile
     ports:
       - "5173:5173"
-    networks:
-      - chat-application-network
     depends_on:
       - backend
     restart: always
     command: serve -s dist -l 5173
+    networks:
+      - chat-application-network
 
 networks:
   chat-application-network:
