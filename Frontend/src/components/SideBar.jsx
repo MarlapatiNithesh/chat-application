@@ -18,6 +18,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import { io } from "socket.io-client";
 
+// ... imports stay unchanged
 function SideBar() {
   const {
     userData,
@@ -31,9 +32,9 @@ function SideBar() {
 
   const [search, setSearch] = useState(false);
   const [input, setInput] = useState("");
+  const [socket, setSocket] = useState(null);
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const [socket, setSocket] = useState(null);
 
   useEffect(() => {
     if (!userData) {
@@ -86,6 +87,7 @@ function SideBar() {
 
   useEffect(() => {
     if (!userData) return;
+
     const fetchOtherUsers = async () => {
       try {
         const res = await axios.get(`${serverUrl}/api/user/others`, {
@@ -101,6 +103,7 @@ function SideBar() {
         }
       }
     };
+
     fetchOtherUsers();
   }, [userData, dispatch, navigate]);
 
@@ -149,18 +152,17 @@ function SideBar() {
 
   const sortedUsers = otherUsers
     ? [...otherUsers].sort((a, b) => {
-        const aUnread = unreadCounts?.[userData?._id]?.[a._id] || 0;
-        const bUnread = unreadCounts?.[userData?._id]?.[b._id] || 0;
+        const unreadA = unreadCounts?.[userData._id]?.[a._id] || 0;
+        const unreadB = unreadCounts?.[userData._id]?.[b._id] || 0;
+        if (unreadA !== unreadB) return unreadB - unreadA;
 
-        if (aUnread !== bUnread) return bUnread - aUnread;
+        const onlineA = onlineUsers.includes(a._id) ? 1 : 0;
+        const onlineB = onlineUsers.includes(b._id) ? 1 : 0;
+        if (onlineA !== onlineB) return onlineB - onlineA;
 
-        const aOnline = onlineUsers.includes(a._id);
-        const bOnline = onlineUsers.includes(b._id);
-        if (aOnline !== bOnline) return bOnline - aOnline;
-
-        const aTime = lastActivity?.[a._id] || 0;
-        const bTime = lastActivity?.[b._id] || 0;
-        return bTime - aTime;
+        const activityA = lastActivity?.[a._id] || 0;
+        const activityB = lastActivity?.[b._id] || 0;
+        return activityB - activityA;
       })
     : [];
 
@@ -170,6 +172,7 @@ function SideBar() {
         isSidebarVisible ? "block" : "hidden"
       } lg:block lg:w-1/3 w-full h-full bg-slate-200 relative`}
     >
+      {/* Logout Button */}
       <button
         aria-label="Logout"
         className="fixed bottom-5 left-3 z-50 w-14 h-14 rounded-full bg-[#20c7ff] flex justify-center items-center shadow-lg text-gray-700"
@@ -178,6 +181,7 @@ function SideBar() {
         <BiLogOutCircle className="w-6 h-6" />
       </button>
 
+      {/* Search Result Dropdown */}
       {input.length > 0 && search && (
         <div className="absolute top-60 left-0 right-0 max-h-[400px] bg-white overflow-y-auto shadow-lg z-40 px-4 py-3 flex flex-col gap-3 rounded-b-lg">
           {searchData.length === 0 ? (
@@ -202,7 +206,7 @@ function SideBar() {
                 <h2 className="font-semibold text-gray-800 text-lg">
                   {user.name || user.userName}
                 </h2>
-                {unreadCounts?.[userData?._id]?.[user._id] > 0 && (
+                {unreadCounts?.[userData._id]?.[user._id] > 0 && (
                   <span className="ml-auto bg-red-500 text-white rounded-full px-2 py-1 text-xs font-semibold">
                     {unreadCounts[userData._id][user._id]}
                   </span>
@@ -213,6 +217,7 @@ function SideBar() {
         </div>
       )}
 
+      {/* Header */}
       <div className="w-full h-[70px] flex justify-between items-center px-6 shadow-md sticky top-0 bg-white z-20">
         <div className="flex items-center gap-5">
           <div
@@ -241,6 +246,7 @@ function SideBar() {
         </button>
       </div>
 
+      {/* Search Bar */}
       {search && (
         <div className="w-full px-5 mt-4">
           <input
@@ -255,6 +261,7 @@ function SideBar() {
         </div>
       )}
 
+      {/* User List */}
       <div className="max-h-[calc(100vh-160px)] overflow-y-auto mt-5">
         {sortedUsers.map((user) => (
           <div
@@ -277,7 +284,7 @@ function SideBar() {
             <h2 className="font-semibold text-gray-800 text-lg">
               {user.name || user.userName}
             </h2>
-            {unreadCounts?.[userData?._id]?.[user._id] > 0 && (
+            {unreadCounts?.[userData._id]?.[user._id] > 0 && (
               <span className="ml-auto bg-red-500 text-white rounded-full px-2 py-1 text-xs font-semibold">
                 {unreadCounts[userData._id][user._id]}
               </span>

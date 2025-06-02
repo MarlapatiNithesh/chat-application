@@ -47,41 +47,42 @@ function MessageArea() {
           withCredentials: true,
         });
         dispatch(setmessages(res.data.messages || []));
+        socket?.emit("readMessages", { chatWith: selectedUser._id });
       } catch (err) {
         console.error("Error fetching messages:", err);
       }
     };
     fetchMessages();
-  }, [selectedUser, dispatch]);
+  }, [selectedUser, dispatch, socket]);
 
   useEffect(() => {
     if (!socket || !selectedUser) return;
 
-    socket.on("typing", (fromUserId) => {
+    const handleTyping = (fromUserId) => {
       if (fromUserId === selectedUser._id) {
         setIsUserTyping(true);
         clearTimeout(typingTimeoutRef.current);
         typingTimeoutRef.current = setTimeout(() => setIsUserTyping(false), 1500);
       }
-    });
-
-    return () => {
-      socket.off("typing");
     };
-  }, [socket, selectedUser]);
 
-  useEffect(() => {
-    if (!socket) return;
     const handleNewMessage = (newMessage) => {
       if (
-        selectedUser &&
-        (newMessage.sender === selectedUser._id || newMessage.receiver === selectedUser._id)
+        newMessage.sender === selectedUser._id ||
+        newMessage.receiver === selectedUser._id
       ) {
         dispatch(setmessages((prev) => [...prev, newMessage]));
+        socket.emit("readMessages", { chatWith: selectedUser._id });
       }
     };
+
+    socket.on("typing", handleTyping);
     socket.on("newMessage", handleNewMessage);
-    return () => socket.off("newMessage", handleNewMessage);
+
+    return () => {
+      socket.off("typing", handleTyping);
+      socket.off("newMessage", handleNewMessage);
+    };
   }, [socket, selectedUser, dispatch]);
 
   const handleSendMessage = async (e) => {
@@ -100,6 +101,7 @@ function MessageArea() {
       );
       const newMsg = res.data.newMessage;
       dispatch(setmessages([...messages, newMsg]));
+      socket.emit("newMessage", { to: selectedUser._id, message: newMsg });
       setInput("");
       setBackendImage(null);
       setFrontendImage(null);
@@ -113,7 +115,7 @@ function MessageArea() {
     setInput(e.target.value);
     if (!typing && socket && selectedUser) {
       setTyping(true);
-      socket.emit("typing", selectedUser._id);
+      socket.emit("typing", { to: selectedUser._id });
       setTimeout(() => setTyping(false), 1500);
     }
   };
@@ -137,7 +139,6 @@ function MessageArea() {
     <div className={`relative w-full h-full flex ${selectedUser ? "flex" : "hidden"} lg:flex flex-col`}>
       {selectedUser ? (
         <>
-          {/* Header */}
           <div className="flex items-center px-4 py-2 bg-[#1797c2] rounded-b-2xl shadow-md">
             <IoIosArrowRoundBack
               className="text-white text-3xl cursor-pointer mr-3"
@@ -151,16 +152,11 @@ function MessageArea() {
               />
             </div>
             <div className="ml-4">
-              <p className="text-white text-lg font-semibold">
-                {displayName}
-              </p>
-              {isUserTyping && (
-                <p className="text-white text-sm font-light">typing...</p>
-              )}
+              <p className="text-white text-lg font-semibold">{displayName}</p>
+              {isUserTyping && <p className="text-white text-sm font-light">typing...</p>}
             </div>
           </div>
 
-          {/* Messages */}
           <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-100">
             {messages.map((msg, index) =>
               msg.sender === userData?._id ? (
@@ -180,7 +176,6 @@ function MessageArea() {
             <div ref={messageEndRef} />
           </div>
 
-          {/* Input */}
           <div className="w-full px-4 py-2 relative">
             {frontendImage && (
               <img
