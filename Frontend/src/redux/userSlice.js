@@ -8,6 +8,7 @@ const initialState = {
   unreadCounts: {},
   lastActivity: {},
   searchData: [],
+  socket: null, // ✅ added socket state
 };
 
 const userSlice = createSlice({
@@ -25,6 +26,7 @@ const userSlice = createSlice({
       state.unreadCounts = {};
       state.lastActivity = {};
       state.searchData = [];
+      state.socket = null; // ✅ clear socket on logout
     },
     setOtherUsers(state, action) {
       state.otherUsers = action.payload || [];
@@ -44,6 +46,9 @@ const userSlice = createSlice({
     setSearchData(state, action) {
       state.searchData = action.payload || [];
     },
+    setSocket(state, action) {
+      state.socket = action.payload;
+    },
   },
 });
 
@@ -56,6 +61,7 @@ export const {
   setUnreadCounts,
   setLastActivity,
   setSearchData,
+  setSocket, // ✅ now exported properly
 } = userSlice.actions;
 
 export default userSlice.reducer;
