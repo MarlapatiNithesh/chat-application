@@ -1,31 +1,126 @@
 import React, { useRef, useState, useEffect } from "react";
 import { IoIosArrowRoundBack } from "react-icons/io";
-import dp from "../assets/dp.png";
-import { useDispatch, useSelector } from "react-redux";
-import { setSelectedUser } from "../redux/userSlice";
 import { RiEmojiStickerLine } from "react-icons/ri";
 import { FaImages } from "react-icons/fa6";
 import { RiSendPlane2Fill } from "react-icons/ri";
 import EmojiPicker from "emoji-picker-react";
+import { useDispatch, useSelector } from "react-redux";
+import { setSelectedUser } from "../redux/userSlice";
+import { setmessages } from "../redux/messageSlice";
 import SenderMessage from "./SenderMessage";
-
+import ReceiverMessage from "./ReceiverMessage";
+import dp from "../assets/dp.png";
 import axios from "axios";
 import { serverUrl } from "../main";
-import { setmessages } from "../redux/messageSlice";
-import ReceiverMessage from "./ReceiverMessage";
 
 function MessageArea() {
   const { selectedUser, userData, socket } = useSelector((state) => state.user);
   const { messages } = useSelector((state) => state.message);
   const dispatch = useDispatch();
 
-  const [showPicker, setShowPicker] = useState(false);
   const [input, setInput] = useState("");
+  const [showPicker, setShowPicker] = useState(false);
   const [frontendImage, setFrontendImage] = useState(null);
   const [backendImage, setBackendImage] = useState(null);
   const [isSending, setIsSending] = useState(false);
+  const [typing, setTyping] = useState(false);
+  const [isUserTyping, setIsUserTyping] = useState(false);
 
-  const image = useRef();
+  const messageEndRef = useRef(null);
+  const imageRef = useRef();
+  const typingTimeoutRef = useRef(null);
+
+  // Auto-scroll to latest message
+  useEffect(() => {
+    if (messageEndRef.current) {
+      messageEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages]);
+
+  // Fetch messages when selected user changes
+  useEffect(() => {
+    if (!selectedUser) {
+      dispatch(setmessages([]));
+      return;
+    }
+    const fetchMessages = async () => {
+      try {
+        const res = await axios.get(`${serverUrl}/api/message/get/${selectedUser._id}`, {
+          withCredentials: true,
+        });
+        dispatch(setmessages(res.data.messages || []));
+      } catch (err) {
+        console.error("Error fetching messages:", err);
+      }
+    };
+    fetchMessages();
+  }, [selectedUser, dispatch]);
+
+  // Handle typing indicator
+  useEffect(() => {
+    if (!socket || !selectedUser) return;
+
+    socket.on("typing", (fromUserId) => {
+      if (fromUserId === selectedUser._id) {
+        setIsUserTyping(true);
+        clearTimeout(typingTimeoutRef.current);
+        typingTimeoutRef.current = setTimeout(() => setIsUserTyping(false), 1500);
+      }
+    });
+
+    return () => {
+      socket.off("typing");
+    };
+  }, [socket, selectedUser]);
+
+  // Handle incoming message
+  useEffect(() => {
+    if (!socket) return;
+    const handleNewMessage = (newMessage) => {
+      if (
+        selectedUser &&
+        (newMessage.sender === selectedUser._id || newMessage.receiver === selectedUser._id)
+      ) {
+        dispatch(setmessages((prev) => [...prev, newMessage]));
+      }
+    };
+    socket.on("newMessage", handleNewMessage);
+    return () => socket.off("newMessage", handleNewMessage);
+  }, [socket, selectedUser, dispatch]);
+
+  const handleSendMessage = async (e) => {
+    e.preventDefault();
+    if (!input && !backendImage) return;
+    setIsSending(true);
+    try {
+      const formData = new FormData();
+      formData.append("message", input);
+      if (backendImage) formData.append("image", backendImage);
+
+      const res = await axios.post(
+        `${serverUrl}/api/message/send/${selectedUser._id}`,
+        formData,
+        { withCredentials: true }
+      );
+      const newMsg = res.data.newMessage;
+      dispatch(setmessages([...messages, newMsg]));
+      setInput("");
+      setBackendImage(null);
+      setFrontendImage(null);
+    } catch (err) {
+      console.error("Message send failed:", err);
+    }
+    setIsSending(false);
+  };
+
+  const handleInputChange = (e) => {
+    setInput(e.target.value);
+    if (!typing && socket && selectedUser) {
+      setTyping(true);
+      socket.emit("typing", selectedUser._id);
+      setTimeout(() => setTyping(false), 1500);
+    }
+  };
 
   const handleImage = (e) => {
     const file = e.target.files[0];
@@ -35,203 +130,110 @@ function MessageArea() {
     }
   };
 
-  useEffect(() => {
-    socket?.on("newMessage", (newMessage) => {
-      if (newMessage.sender === selectedUser._id) {
-        const updatedMessages = Array.isArray(messages)
-          ? [...messages, newMessage]
-          : [newMessage];
-        dispatch(setmessages(updatedMessages));
-      }
-    });
-    return () => {
-      socket?.off("newMessage");
-    };
-  }, [messages, setmessages]);
-
-  useEffect(() => {
-    return () => {
-      if (frontendImage) {
-        URL.revokeObjectURL(frontendImage);
-      }
-    };
-  }, [frontendImage]);
-
-  // Fetch messages every time selectedUser changes
-  useEffect(() => {
-    if (!selectedUser) {
-      dispatch(setmessages([]));
-      return;
-    }
-
-    const fetchMessages = async () => {
-      try {
-        const res = await axios.get(
-          `${serverUrl}/api/message/get/${selectedUser._id}`,
-          { withCredentials: true }
-        );
-        if (res.data && res.data.messages) {
-          dispatch(setmessages(res.data.messages));
-        }
-      } catch (error) {
-        console.error("Failed to fetch messages:", error);
-      }
-    };
-
-    fetchMessages();
-  }, [selectedUser, dispatch]);
-
-  const handleSendMessage = async (e) => {
-    e.preventDefault();
-    if (input.length === 0 && backendImage == null) {
-      return;
-    }
-
-    setIsSending(true);
-    try {
-      const formData = new FormData();
-      formData.append("message", input);
-      if (backendImage) {
-        formData.append("image", backendImage);
-      }
-
-      const result = await axios.post(
-        `${serverUrl}/api/message/send/${selectedUser._id}`,
-        formData,
-        { withCredentials: true }
-      );
-
-      const newMsg = result.data.newMessage;
-
-      // Add the new message to current messages
-      const updatedMessages = Array.isArray(messages)
-        ? [...messages, newMsg]
-        : [newMsg];
-
-      dispatch(setmessages(updatedMessages));
-
-      setInput("");
-      setFrontendImage(null);
-      setBackendImage(null);
-    } catch (error) {
-      console.error("Error sending message:", error);
-    }
-    setIsSending(false);
-  };
-
-  const onEmojiClick = (emojiData) => {
-    setInput((prevInput) => prevInput + emojiData.emoji);
+  const onEmojiClick = (emoji) => {
+    setInput((prev) => prev + emoji.emoji);
     setShowPicker(false);
   };
 
   return (
-    <div
-      className={`lg:w-[70%] relative ${
-        selectedUser ? "flex" : "hidden"
-      } lg:flex w-full h-full bg-slate-200 border-l-2 border-gray-300 overflow-hidden`}
-    >
-      {selectedUser && (
-        <div className="w-full h-[100vh] flex flex-col overflow-hidden gap-[20px] items-center">
-          <div className="w-full h-[100px] bg-[#1797c2] rounded-b-[30px] shadow-gray-400 shadow-lg gap-[20px] flex items-center px-[20px] ">
-            <div
-              className="cursor-pointer"
+    <div className={`relative w-full h-full flex ${selectedUser ? "flex" : "hidden"} lg:flex flex-col`}>
+      {selectedUser ? (
+        <>
+          {/* Header */}
+          <div className="flex items-center px-4 py-2 bg-[#1797c2] rounded-b-2xl shadow-md">
+            <IoIosArrowRoundBack
+              className="text-white text-3xl cursor-pointer mr-3"
               onClick={() => dispatch(setSelectedUser(null))}
-            >
-              <IoIosArrowRoundBack className="w-[40px] h-[40px] text-white" />
-            </div>
-            <div className="w-[50px] h-[50px] rounded-full overflow-hidden flex justify-center items-center bg-white cursor-pointer shadow-gray-500 shadow-lg">
+            />
+            <div className="w-12 h-12 rounded-full overflow-hidden bg-white flex items-center justify-center">
               <img
-                src={selectedUser?.image || dp}
-                alt="User Avatar"
-                className="h-[100%]"
+                src={selectedUser.image || dp}
+                alt="Profile"
+                className="h-full w-full object-cover"
               />
             </div>
-            <h1 className="text-white font-semibold text-[20px]">
-              {selectedUser?.name || "user"}
-            </h1>
+            <div className="ml-4">
+              <p className="text-white text-lg font-semibold">
+                {selectedUser.name}
+              </p>
+              {isUserTyping && (
+                <p className="text-white text-sm font-light">typing...</p>
+              )}
+            </div>
           </div>
 
-          <div className="w-full h-[70%] flex flex-col py-[30px] px-[20px] overflow-auto gap-[20px] relative">
-            {showPicker && (
-              <div className="absolute bottom-[120px] left-[20px] z-[100] shadow-lg">
-                <EmojiPicker
-                  width={250}
-                  height={350}
-                  onEmojiClick={onEmojiClick}
+          {/* Messages */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-100">
+            {messages.map((msg, index) =>
+              msg.sender === userData?._id ? (
+                <SenderMessage
+                  key={msg._id || index}
+                  image={msg.image}
+                  message={msg.message}
                 />
+              ) : (
+                <ReceiverMessage
+                  key={msg._id || index}
+                  image={msg.image}
+                  message={msg.message}
+                />
+              )
+            )}
+            <div ref={messageEndRef} />
+          </div>
+
+          {/* Input */}
+          <div className="w-full px-4 py-2 relative">
+            {frontendImage && (
+              <img
+                src={frontendImage}
+                alt="Preview"
+                className="w-20 h-20 rounded-lg absolute bottom-20 right-4 shadow"
+              />
+            )}
+            {showPicker && (
+              <div className="absolute bottom-24 left-4 z-50 shadow-lg">
+                <EmojiPicker height={350} width={300} onEmojiClick={onEmojiClick} />
               </div>
             )}
-
-            {Array.isArray(messages) &&
-              messages.map((mess, idx) =>
-                mess.sender === userData?._id ? (
-                  <SenderMessage
-                    key={mess._id || idx}
-                    image={mess.image}
-                    message={mess.message}
-                  />
-                ) : (
-                  <ReceiverMessage
-                    key={mess._id || idx}
-                    image={mess.image}
-                    message={mess.message}
-                  />
-                )
+            <form
+              className="flex items-center bg-[#1797c2] rounded-full px-4 py-2 space-x-4"
+              onSubmit={handleSendMessage}
+            >
+              <RiEmojiStickerLine
+                className="text-white text-2xl cursor-pointer"
+                onClick={() => setShowPicker((prev) => !prev)}
+              />
+              <input
+                type="file"
+                accept="image/*"
+                hidden
+                ref={imageRef}
+                onChange={handleImage}
+              />
+              <input
+                type="text"
+                className="flex-1 text-white text-base placeholder-white bg-transparent outline-none"
+                placeholder="Type a message..."
+                value={input}
+                onChange={handleInputChange}
+              />
+              <FaImages
+                className="text-white text-xl cursor-pointer"
+                onClick={() => imageRef.current.click()}
+              />
+              {(input || backendImage) && (
+                <button type="submit" disabled={isSending}>
+                  <RiSendPlane2Fill className="text-white text-2xl" />
+                </button>
               )}
+            </form>
           </div>
-        </div>
-      )}
-
-      {selectedUser && (
-        <div className="w-full lg:w-[70%] h-[100px] fixed bottom-[20px] flex items-center justify-center px-4">
-          {frontendImage && (
-            <img
-              src={frontendImage}
-              alt="preview"
-              className="w-[80px] absolute bottom-[100px] right-[20%] rounded-lg shadow-gray-400 shadow-lg"
-            />
-          )}
-          <form
-            className="w-[95%] lg:w-[70%] h-[60px] bg-[rgb(23,151,194)] shadow-gray-400 shadow-lg rounded-full flex items-center gap-[20px] px-[20px] relative"
-            onSubmit={handleSendMessage}
-          >
-            <div onClick={() => setShowPicker((prev) => !prev)}>
-              <RiEmojiStickerLine className="w-[25px] h-[25px] text-white cursor-pointer" />
-            </div>
-            <input
-              type="file"
-              accept="image/*"
-              ref={image}
-              hidden
-              onChange={handleImage}
-            />
-            <input
-              type="text"
-              className="w-full h-full px-[10px] outline-none border-0 text-[19px] text-white bg-transparent placeholder-white"
-              placeholder="Message"
-              onChange={(e) => setInput(e.target.value)}
-              value={input}
-            />
-            <div onClick={() => image.current.click()}>
-              <FaImages className="w-[25px] h-[25px] cursor-pointer text-white" />
-            </div>
-            {(input.length > 0 || backendImage != null) && (
-              <button type="submit" disabled={isSending}>
-                <RiSendPlane2Fill className="w-[25px] cursor-pointer h-[25px] text-white" />
-              </button>
-            )}
-          </form>
-        </div>
-      )}
-
-      {!selectedUser && (
-        <div className="w-full h-full flex flex-col justify-center items-center">
-          <h1 className="text-gray-700 font-bold text-[50px]">
-            Welcome to Chatly
-          </h1>
-          <span className="text-gray-700 font-semibold text-[30px]">
-            Chat Friendly !
-          </span>
+        </>
+      ) : (
+        <div className="w-full h-full flex flex-col justify-center items-center text-center">
+          <h1 className="text-4xl font-bold text-gray-700">Welcome to Chatly</h1>
+          <p className="text-xl font-semibold text-gray-500 mt-2">Chat Friendly!</p>
         </div>
       )}
     </div>
