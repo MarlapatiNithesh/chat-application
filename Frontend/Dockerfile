@@ -3,33 +3,33 @@
 # --- Stage 1: Build the Vite App ---
 FROM node:18-alpine AS builder
 
-# Set working directory
 WORKDIR /app
 
-# Copy dependency files and install exact versions (faster, safer in CI)
+# Copy dependency files
 COPY package*.json ./
+
+# Install dependencies (exact versions)
 RUN npm ci
 
-# Copy all source files (including .env files for Vite)
+# Copy all source files including environment files
 COPY . .
 
-# Build the Vite app (Vite will automatically pick up .env, .env.production, etc.)
+# Build the app (outputs to /app/dist)
 RUN npm run build
 
-# --- Stage 2: Serve the built files using `serve` ---
+# --- Stage 2: Serve the built app with `vite preview` ---
 FROM node:18-alpine AS runner
 
-# Install `serve` globally to serve the static files
-RUN npm install -g serve
-
-# Set working directory
 WORKDIR /app
 
-# Copy only the built output from the builder stage
+# Copy production dependencies and built output
+COPY package*.json ./
+RUN npm ci --production
+
 COPY --from=builder /app/dist ./dist
 
-# Expose the port on which `serve` will serve files (default is 3000, but you're using 5173)
-EXPOSE 5173
+# Expose Vite preview server port (default 4173)
+EXPOSE 4173
 
-# Serve the static files from the dist folder on port 5173
-CMD ["serve", "-s", "dist", "-l", "5173"]
+# Run vite preview to serve the static files on port 4173
+CMD ["npm", "run", "preview"]
