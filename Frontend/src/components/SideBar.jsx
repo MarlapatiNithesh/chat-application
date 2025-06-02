@@ -33,7 +33,6 @@ function SideBar() {
   const [input, setInput] = useState("");
   const dispatch = useDispatch();
   const navigate = useNavigate();
-
   const [socket, setSocket] = useState(null);
 
   useEffect(() => {
@@ -51,8 +50,12 @@ function SideBar() {
 
     setSocket(newSocket);
 
-    newSocket.on("connect_error", (err) => console.error("Socket connect_error:", err));
-    newSocket.on("disconnect", (reason) => console.log("Socket disconnected:", reason));
+    newSocket.on("connect_error", (err) =>
+      console.error("Socket connect_error:", err)
+    );
+    newSocket.on("disconnect", (reason) =>
+      console.log("Socket disconnected:", reason)
+    );
 
     newSocket.on("getOnlineUsers", ({ users, unreadCounts, lastActivity }) => {
       dispatch(setOnlineUsers(Array.isArray(users) ? users : []));
@@ -66,6 +69,16 @@ function SideBar() {
 
     newSocket.on("lastActivityUpdate", (newLastActivity) => {
       dispatch(setLastActivity(newLastActivity || {}));
+    });
+
+    newSocket.on("newMessage", ({ fromUserId }) => {
+      dispatch(setUnreadCounts((prev) => ({
+        ...prev,
+        [userData._id]: {
+          ...prev[userData._id],
+          [fromUserId]: (prev[userData._id]?.[fromUserId] || 0) + 1,
+        },
+      })));
     });
 
     return () => newSocket.disconnect();
@@ -93,7 +106,9 @@ function SideBar() {
 
   const handleLogOut = async () => {
     try {
-      await axios.get(`${serverUrl}/api/auth/logout`, { withCredentials: true });
+      await axios.get(`${serverUrl}/api/auth/logout`, {
+        withCredentials: true,
+      });
       dispatch(setUserData(null));
       dispatch(setOtherUsers([]));
       dispatch(setSelectedUser(null));
@@ -134,17 +149,27 @@ function SideBar() {
 
   const sortedUsers = otherUsers
     ? [...otherUsers].sort((a, b) => {
+        const aUnread = unreadCounts?.[userData?._id]?.[a._id] || 0;
+        const bUnread = unreadCounts?.[userData?._id]?.[b._id] || 0;
+
+        if (aUnread !== bUnread) return bUnread - aUnread;
+
         const aOnline = onlineUsers.includes(a._id);
         const bOnline = onlineUsers.includes(b._id);
         if (aOnline !== bOnline) return bOnline - aOnline;
+
         const aTime = lastActivity?.[a._id] || 0;
         const bTime = lastActivity?.[b._id] || 0;
-        return bTime !== aTime ? bTime - aTime : (a.name || a.userName).localeCompare(b.name || b.userName);
+        return bTime - aTime;
       })
     : [];
 
   return (
-    <div className={`${isSidebarVisible ? "block" : "hidden"} lg:block lg:w-1/3 w-full h-full bg-slate-200 relative`}>
+    <div
+      className={`${
+        isSidebarVisible ? "block" : "hidden"
+      } lg:block lg:w-1/3 w-full h-full bg-slate-200 relative`}
+    >
       <button
         aria-label="Logout"
         className="fixed bottom-5 left-3 z-50 w-14 h-14 rounded-full bg-[#20c7ff] flex justify-center items-center shadow-lg text-gray-700"
@@ -165,12 +190,18 @@ function SideBar() {
                 onClick={() => handleSelectUser(user)}
               >
                 <div className="relative w-14 h-14 rounded-full overflow-hidden">
-                  <img src={user.image || dp} alt={user.name || user.userName} className="object-cover w-full h-full" />
+                  <img
+                    src={user.image || dp}
+                    alt={user.name || user.userName}
+                    className="object-cover w-full h-full"
+                  />
                   {onlineUsers.includes(user._id) && (
                     <span className="absolute bottom-1 right-1 w-3 h-3 rounded-full bg-green-500 shadow-md"></span>
                   )}
                 </div>
-                <h2 className="font-semibold text-gray-800 text-lg">{user.name || user.userName}</h2>
+                <h2 className="font-semibold text-gray-800 text-lg">
+                  {user.name || user.userName}
+                </h2>
                 {unreadCounts?.[userData?._id]?.[user._id] > 0 && (
                   <span className="ml-auto bg-red-500 text-white rounded-full px-2 py-1 text-xs font-semibold">
                     {unreadCounts[userData._id][user._id]}
@@ -188,14 +219,24 @@ function SideBar() {
             className="relative w-14 h-14 rounded-full overflow-hidden bg-white cursor-pointer"
             onClick={() => navigate("/profile")}
           >
-            <img src={userData?.image || dp} alt={userData?.name || userData?.userName} className="object-cover w-full h-full" />
+            <img
+              src={userData?.image || dp}
+              alt={userData?.name || userData?.userName}
+              className="object-cover w-full h-full"
+            />
             {onlineUsers.includes(userData?._id) && (
               <span className="absolute bottom-1 right-1 w-3 h-3 rounded-full bg-green-500 shadow-md"></span>
             )}
           </div>
-          <h2 className="text-xl font-semibold text-gray-800">{userData?.name || userData?.userName}</h2>
+          <h2 className="text-xl font-semibold text-gray-800">
+            {userData?.name || userData?.userName}
+          </h2>
         </div>
-        <button aria-label="Search" className="text-gray-800 hover:text-blue-600 text-3xl" onClick={() => setSearch(!search)}>
+        <button
+          aria-label="Search"
+          className="text-gray-800 hover:text-blue-600 text-3xl"
+          onClick={() => setSearch(!search)}
+        >
           {search ? <RxCross2 /> : <IoIosSearch />}
         </button>
       </div>
@@ -218,16 +259,24 @@ function SideBar() {
         {sortedUsers.map((user) => (
           <div
             key={user._id}
-            className={`flex items-center gap-4 p-3 hover:bg-[#78cae5] cursor-pointer rounded-lg ${selectedUser?._id === user._id ? "bg-[#59bdf2]" : ""}`}
+            className={`flex items-center gap-4 p-3 hover:bg-[#78cae5] cursor-pointer rounded-lg ${
+              selectedUser?._id === user._id ? "bg-[#59bdf2]" : ""
+            }`}
             onClick={() => handleSelectUser(user)}
           >
             <div className="relative w-14 h-14 rounded-full overflow-hidden bg-white">
-              <img src={user.image || dp} alt={user.name || user.userName} className="object-cover w-full h-full" />
+              <img
+                src={user.image || dp}
+                alt={user.name || user.userName}
+                className="object-cover w-full h-full"
+              />
               {onlineUsers.includes(user._id) && (
                 <span className="absolute bottom-1 right-1 w-3 h-3 rounded-full bg-green-500 shadow-md"></span>
               )}
             </div>
-            <h2 className="font-semibold text-gray-800 text-lg">{user.name || user.userName}</h2>
+            <h2 className="font-semibold text-gray-800 text-lg">
+              {user.name || user.userName}
+            </h2>
             {unreadCounts?.[userData?._id]?.[user._id] > 0 && (
               <span className="ml-auto bg-red-500 text-white rounded-full px-2 py-1 text-xs font-semibold">
                 {unreadCounts[userData._id][user._id]}
