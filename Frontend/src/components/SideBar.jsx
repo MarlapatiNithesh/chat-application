@@ -36,9 +36,15 @@ function SideBar() {
 
   const [socket, setSocket] = useState(null);
 
+  // Socket connection and listeners
   useEffect(() => {
-    if (!userData) return;
+    if (!userData) {
+      // If userData not available, redirect to login
+      navigate("/login");
+      return;
+    }
 
+    // Initialize socket
     const newSocket = io(serverUrl, {
       query: { userId: userData._id },
       transports: ["websocket"],
@@ -73,7 +79,32 @@ function SideBar() {
     return () => {
       newSocket.disconnect();
     };
-  }, [userData, dispatch]);
+  }, [userData, dispatch, navigate]);
+
+  // Fetch all other users once userData is loaded
+  useEffect(() => {
+    if (!userData) return;
+
+    const fetchOtherUsers = async () => {
+      try {
+        const res = await axios.get(`${serverUrl}/api/user/others`, {
+          withCredentials: true,
+        });
+        // Filter out current user from the list if included
+        const filteredUsers = res.data.filter((user) => user._id !== userData._id);
+        dispatch(setOtherUsers(filteredUsers));
+      } catch (error) {
+        console.error("Error fetching users:", error);
+        // If unauthorized, logout user and redirect to login
+        if (error.response && error.response.status === 401) {
+          dispatch(setUserData(null));
+          navigate("/login");
+        }
+      }
+    };
+
+    fetchOtherUsers();
+  }, [userData, dispatch, navigate]);
 
   const handleLogOut = async () => {
     try {
@@ -82,6 +113,7 @@ function SideBar() {
       });
       dispatch(setUserData(null));
       dispatch(setOtherUsers([]));
+      dispatch(setSelectedUser(null));
       navigate("/login");
     } catch (error) {
       console.error(error);
