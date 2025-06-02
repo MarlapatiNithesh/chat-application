@@ -5,7 +5,7 @@ import reactRefresh from 'eslint-plugin-react-refresh'
 
 export default [
   {
-    ignores: ['dist'],
+    ignores: ['dist'], // Ignore build output folder
   },
   {
     files: ['**/*.{js,jsx}'],
@@ -26,7 +26,7 @@ export default [
     rules: {
       ...js.configs.recommended.rules,
       ...reactHooks.configs.recommended.rules,
-      // Ignore unused vars starting with uppercase or underscore
+      // Ignore unused vars if they start with uppercase or underscore (common in React)
       'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
       'react-refresh/only-export-components': [
         'warn',
