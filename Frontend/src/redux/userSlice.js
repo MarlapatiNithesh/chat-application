@@ -4,7 +4,7 @@ const initialState = {
   userData: null,
   otherUsers: [],
   selectedUser: null,
-  onlineUsers: [],           // Make sure default is an empty array
+  onlineUsers: [],
   unreadCounts: {},
   lastActivity: {},
   searchData: [],
@@ -16,6 +16,15 @@ const userSlice = createSlice({
   reducers: {
     setUserData(state, action) {
       state.userData = action.payload;
+    },
+    clearUserData(state) {
+      state.userData = null;
+      state.selectedUser = null;
+      state.otherUsers = [];
+      state.onlineUsers = [];
+      state.unreadCounts = {};
+      state.lastActivity = {};
+      state.searchData = [];
     },
     setOtherUsers(state, action) {
       state.otherUsers = action.payload || [];
@@ -40,6 +49,7 @@ const userSlice = createSlice({
 
 export const {
   setUserData,
+  clearUserData,
   setOtherUsers,
   setSelectedUser,
   setOnlineUsers,

@@ -88,11 +88,14 @@ function SideBar() {
     }
   };
 
-  const handlesearch = async () => {
+  const handleSearch = async () => {
     try {
-      if (!input) return;
+      if (!input.trim()) {
+        dispatch(setSearchData([]));
+        return;
+      }
       const result = await axios.get(
-        `${serverUrl}/api/user/search?query=${input}`,
+        `${serverUrl}/api/user/search?query=${encodeURIComponent(input.trim())}`,
         { withCredentials: true }
       );
       dispatch(setSearchData(result.data));
@@ -102,7 +105,7 @@ function SideBar() {
   };
 
   useEffect(() => {
-    handlesearch();
+    handleSearch();
   }, [input]);
 
   // When selecting a user reset unread count for that chat
@@ -115,6 +118,7 @@ function SideBar() {
     setInput("");
   };
 
+  // Show sidebar on large screens or when no user is selected (mobile)
   const isSidebarVisible = window.innerWidth >= 1024 || !selectedUser;
 
   // Sort users by lastActivity descending, fallback to name
@@ -145,10 +149,10 @@ function SideBar() {
       {/* Search Result Dropdown */}
       {input.length > 0 && search && (
         <div className="absolute top-60 left-0 right-0 max-h-[400px] bg-white overflow-y-auto shadow-lg z-40 px-4 py-3 flex flex-col gap-3 rounded-b-lg">
-          {searchData?.length === 0 ? (
+          {searchData.length === 0 ? (
             <p className="text-center text-gray-500">No users found</p>
           ) : (
-            searchData?.map((user) => (
+            searchData.map((user) => (
               <div
                 key={user._id}
                 className="flex items-center gap-4 p-2 hover:bg-[#78cae5] cursor-pointer rounded-lg"
@@ -160,7 +164,7 @@ function SideBar() {
                     alt={user.name || user.userName}
                     className="object-cover w-full h-full"
                   />
-                  {(Array.isArray(onlineUsers) && onlineUsers.includes(user._id)) && (
+                  {Array.isArray(onlineUsers) && onlineUsers.includes(user._id) && (
                     <span className="absolute bottom-1 right-1 w-3 h-3 rounded-full bg-green-500 shadow-md shadow-gray-500"></span>
                   )}
                 </div>
@@ -187,7 +191,7 @@ function SideBar() {
               alt={userData?.name || userData?.userName}
               className="object-cover w-full h-full"
             />
-            {(Array.isArray(onlineUsers) && onlineUsers.includes(userData?._id)) && (
+            {Array.isArray(onlineUsers) && onlineUsers.includes(userData?._id) && (
               <span className="absolute bottom-1 right-1 w-3 h-3 rounded-full bg-green-500 shadow-md shadow-gray-500"></span>
             )}
           </div>
@@ -216,13 +220,14 @@ function SideBar() {
             onChange={(e) => setInput(e.target.value)}
             className="w-full rounded-md border border-gray-400 px-4 py-2"
             placeholder="Search by name or username"
+            autoFocus
           />
         </div>
       )}
 
       {/* Users List */}
       <div className="max-h-[calc(100vh-160px)] overflow-y-auto mt-5">
-        {sortedUsers?.map((user) => (
+        {sortedUsers.map((user) => (
           <div
             key={user._id}
             className={`flex items-center gap-4 p-3 hover:bg-[#78cae5] cursor-pointer rounded-lg ${
@@ -236,7 +241,7 @@ function SideBar() {
                 alt={user.name || user.userName}
                 className="object-cover w-full h-full"
               />
-              {(Array.isArray(onlineUsers) && onlineUsers.includes(user._id)) && (
+              {Array.isArray(onlineUsers) && onlineUsers.includes(user._id) && (
                 <span className="absolute bottom-1 right-1 w-3 h-3 rounded-full bg-green-500 shadow-md shadow-gray-500"></span>
               )}
             </div>
