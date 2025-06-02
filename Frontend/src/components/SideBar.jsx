@@ -34,6 +34,7 @@ function SideBar() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
+  // Use local socket state here, no need to store socket in redux
   const [socket, setSocket] = useState(null);
 
   useEffect(() => {
@@ -56,13 +57,13 @@ function SideBar() {
     });
 
     newSocket.on("lastActivityUpdate", (newLastActivity) => {
-      dispatch(setLastActivity(newLastActivity[userData._id] || {}));
+      dispatch(setLastActivity(newLastActivity || {}));
     });
 
     return () => {
       newSocket.disconnect();
     };
-  }, [userData]);
+  }, [userData, dispatch]);
 
   const handleLogOut = async () => {
     try {
@@ -156,9 +157,9 @@ function SideBar() {
                 <h2 className="font-semibold text-gray-800 text-lg">
                   {user.name || user.userName}
                 </h2>
-                {unreadCounts?.[userData?._id]?.[user._id] > 0 && (
+                {unreadCounts?.[user._id] > 0 && (
                   <span className="ml-auto bg-red-500 text-white rounded-full px-2 py-1 text-xs font-semibold">
-                    {unreadCounts[userData._id][user._id]}
+                    {unreadCounts[user._id]}
                   </span>
                 )}
               </div>
@@ -223,9 +224,9 @@ function SideBar() {
             <h2 className="font-semibold text-lg truncate max-w-[120px]">
               {user.name || user.userName}
             </h2>
-            {unreadCounts?.[userData?._id]?.[user._id] > 0 && (
+            {unreadCounts?.[user._id] > 0 && (
               <span className="ml-auto bg-red-500 text-white rounded-full px-2 py-1 text-xs font-semibold select-none">
-                {unreadCounts[userData._id][user._id]}
+                {unreadCounts[user._id]}
               </span>
             )}
           </div>

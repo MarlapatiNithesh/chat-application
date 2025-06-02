@@ -8,7 +8,8 @@ const initialState = {
   socket: null,
   onlineUsers: null,
   searchData: null,
-  lastActivity: {},  // added this for last activity timestamps
+  unreadCounts: {},     // Added unreadCounts to state
+  lastActivity: {},     // last activity timestamps
 };
 
 const userSlice = createSlice({
@@ -43,6 +44,10 @@ const userSlice = createSlice({
       state.searchData = action.payload;
       state.loading = false;
     },
+    setUnreadCounts: (state, action) => {
+      state.unreadCounts = action.payload;
+      state.loading = false;
+    },
     setLastActivity: (state, action) => {
       state.lastActivity = action.payload;
       state.loading = false;
@@ -58,6 +63,7 @@ export const {
   setSocket,
   setOnlineUsers,
   setSearchData,
+  setUnreadCounts,
   setLastActivity,
 } = userSlice.actions;
 
