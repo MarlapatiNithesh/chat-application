@@ -30,14 +30,12 @@ function MessageArea() {
   const imageRef = useRef();
   const typingTimeoutRef = useRef(null);
 
-  // Auto-scroll to latest message
   useEffect(() => {
     if (messageEndRef.current) {
       messageEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages]);
 
-  // Fetch messages when selected user changes
   useEffect(() => {
     if (!selectedUser) {
       dispatch(setmessages([]));
@@ -56,7 +54,6 @@ function MessageArea() {
     fetchMessages();
   }, [selectedUser, dispatch]);
 
-  // Handle typing indicator
   useEffect(() => {
     if (!socket || !selectedUser) return;
 
@@ -73,7 +70,6 @@ function MessageArea() {
     };
   }, [socket, selectedUser]);
 
-  // Handle incoming message
   useEffect(() => {
     if (!socket) return;
     const handleNewMessage = (newMessage) => {
@@ -135,6 +131,8 @@ function MessageArea() {
     setShowPicker(false);
   };
 
+  const displayName = selectedUser?.name || selectedUser?.userName || "User";
+
   return (
     <div className={`relative w-full h-full flex ${selectedUser ? "flex" : "hidden"} lg:flex flex-col`}>
       {selectedUser ? (
@@ -154,7 +152,7 @@ function MessageArea() {
             </div>
             <div className="ml-4">
               <p className="text-white text-lg font-semibold">
-                {selectedUser.name}
+                {displayName}
               </p>
               {isUserTyping && (
                 <p className="text-white text-sm font-light">typing...</p>

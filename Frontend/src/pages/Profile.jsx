@@ -42,11 +42,10 @@ function Profile() {
         withCredentials: true,
       });
 
-      dispatch(setUserData(result.data));
-      navigate("/");
+      dispatch(setUserData(result.data)); // Update redux state
+      navigate("/"); // Redirect to sidebar view
     } catch (error) {
       console.error("Profile update failed:", error);
-      // Optionally show error notification here
     } finally {
       setSaving(false);
     }
@@ -54,7 +53,6 @@ function Profile() {
 
   return (
     <main className="min-h-screen bg-slate-100 flex flex-col items-center justify-center px-4 py-8">
-      {/* Back Button */}
       <button
         aria-label="Go back"
         onClick={() => navigate("/")}
@@ -63,7 +61,6 @@ function Profile() {
         <IoIosArrowRoundBack className="w-10 h-10 text-gray-700" />
       </button>
 
-      {/* Profile Image */}
       <div
         className="relative mb-8 cursor-pointer rounded-full border-4 border-[#20c7ff] shadow-lg shadow-gray-400"
         onClick={() => imageInputRef.current.click()}
@@ -85,7 +82,6 @@ function Profile() {
         </div>
       </div>
 
-      {/* Hidden file input */}
       <input
         type="file"
         accept="image/*"
@@ -94,7 +90,6 @@ function Profile() {
         onChange={handleImage}
       />
 
-      {/* Profile Form */}
       <form
         onSubmit={handleProfile}
         className="w-full max-w-md bg-white rounded-xl p-6 shadow-lg flex flex-col gap-6"
