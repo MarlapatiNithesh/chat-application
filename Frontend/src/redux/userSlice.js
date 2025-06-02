@@ -3,11 +3,12 @@ import { createSlice } from "@reduxjs/toolkit";
 const initialState = {
   userData: null,
   loading: true,
-  otherUsers:null,
-  selectedUser:null,
-  socket:null,
-  onlineUsers:null,
+  otherUsers: null,
+  selectedUser: null,
+  socket: null,
+  onlineUsers: null,
   searchData: null,
+  lastActivity: {},  // added this for last activity timestamps
 };
 
 const userSlice = createSlice({
@@ -22,13 +23,13 @@ const userSlice = createSlice({
       state.userData = null;
       state.loading = false;
     },
-    setOtherUsers:(state,action) => {
+    setOtherUsers: (state, action) => {
       state.otherUsers = action.payload;
       state.loading = false;
     },
-    setSelectedUser:(state,action) => {
-      state.selectedUser=action.payload
-      state.loading=false
+    setSelectedUser: (state, action) => {
+      state.selectedUser = action.payload;
+      state.loading = false;
     },
     setSocket: (state, action) => {
       state.socket = action.payload;
@@ -42,8 +43,22 @@ const userSlice = createSlice({
       state.searchData = action.payload;
       state.loading = false;
     },
+    setLastActivity: (state, action) => {
+      state.lastActivity = action.payload;
+      state.loading = false;
+    },
   },
 });
 
-export const { setUserData, clearUserData,setOtherUsers,setSelectedUser,setSocket,setOnlineUsers,setSearchData } = userSlice.actions;
+export const {
+  setUserData,
+  clearUserData,
+  setOtherUsers,
+  setSelectedUser,
+  setSocket,
+  setOnlineUsers,
+  setSearchData,
+  setLastActivity,
+} = userSlice.actions;
+
 export default userSlice.reducer;

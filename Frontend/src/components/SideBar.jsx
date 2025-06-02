@@ -11,16 +11,58 @@ import {
   setSearchData,
   setSelectedUser,
   setUserData,
+  setOnlineUsers,
+  setUnreadCounts,
+  setLastActivity,
 } from "../redux/userSlice";
 import { useNavigate } from "react-router-dom";
+import { io } from "socket.io-client";
 
 function SideBar() {
-  const { userData, otherUsers, selectedUser, onlineUsers, searchData } =
-    useSelector((state) => state.user);
+  const {
+    userData,
+    otherUsers,
+    selectedUser,
+    onlineUsers,
+    unreadCounts,
+    lastActivity,
+    searchData,
+  } = useSelector((state) => state.user);
+
   const [search, setSearch] = useState(false);
   const [input, setInput] = useState("");
   const dispatch = useDispatch();
   const navigate = useNavigate();
+
+  const [socket, setSocket] = useState(null);
+
+  useEffect(() => {
+    if (!userData) return;
+
+    const newSocket = io(serverUrl, {
+      query: { userId: userData._id },
+    });
+
+    setSocket(newSocket);
+
+    newSocket.on("getOnlineUsers", ({ users, unreadCounts, lastActivity }) => {
+      dispatch(setOnlineUsers(users));
+      dispatch(setUnreadCounts(unreadCounts));
+      dispatch(setLastActivity(lastActivity || {}));
+    });
+
+    newSocket.on("unreadCountsUpdate", (newUnreadCounts) => {
+      dispatch(setUnreadCounts(newUnreadCounts));
+    });
+
+    newSocket.on("lastActivityUpdate", (newLastActivity) => {
+      dispatch(setLastActivity(newLastActivity[userData._id] || {}));
+    });
+
+    return () => {
+      newSocket.disconnect();
+    };
+  }, [userData]);
 
   const handleLogOut = async () => {
     try {
@@ -52,10 +94,27 @@ function SideBar() {
     handlesearch();
   }, [input]);
 
-  // Sidebar visibility: 
-  // On large screens, sidebar always visible
-  // On smaller screens, hide sidebar if a user is selected to maximize chat area
+  // When selecting a user reset unread count for that chat
+  const handleSelectUser = (user) => {
+    dispatch(setSelectedUser(user));
+    if (socket && userData) {
+      socket.emit("readMessages", { chatWith: user._id });
+    }
+    setSearch(false);
+    setInput("");
+  };
+
   const isSidebarVisible = window.innerWidth >= 1024 || !selectedUser;
+
+  // Sort users by lastActivity descending, fallback to name
+  const sortedUsers = otherUsers
+    ? [...otherUsers].sort((a, b) => {
+        const aTime = lastActivity?.[a._id] || 0;
+        const bTime = lastActivity?.[b._id] || 0;
+        if (bTime !== aTime) return bTime - aTime;
+        return (a.name || a.userName).localeCompare(b.name || b.userName);
+      })
+    : [];
 
   return (
     <div
@@ -82,11 +141,7 @@ function SideBar() {
               <div
                 key={user._id}
                 className="flex items-center gap-4 p-2 hover:bg-[#78cae5] cursor-pointer rounded-lg"
-                onClick={() => {
-                  dispatch(setSelectedUser(user));
-                  setInput("");
-                  setSearch(false);
-                }}
+                onClick={() => handleSelectUser(user)}
               >
                 <div className="relative w-14 h-14 rounded-full overflow-hidden bg-white flex justify-center items-center">
                   <img
@@ -101,6 +156,11 @@ function SideBar() {
                 <h2 className="font-semibold text-gray-800 text-lg">
                   {user.name || user.userName}
                 </h2>
+                {unreadCounts?.[userData?._id]?.[user._id] > 0 && (
+                  <span className="ml-auto bg-red-500 text-white rounded-full px-2 py-1 text-xs font-semibold">
+                    {unreadCounts[userData._id][user._id]}
+                  </span>
+                )}
               </div>
             ))
           )}
@@ -108,95 +168,49 @@ function SideBar() {
       )}
 
       {/* Sidebar Header */}
-      <div className="bg-[#20c7ff] rounded-b-[30%] shadow-lg shadow-gray-400 p-5 flex flex-col justify-center px-6">
-        <h1 className="text-white font-bold text-3xl mb-4 select-none">chatly</h1>
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-gray-800 font-bold text-2xl select-none">
-            Hii, {userData?.name || "user"}
-          </h2>
-          <button
-            aria-label="Go to profile"
-            className="w-14 h-14 rounded-full overflow-hidden shadow-lg shadow-gray-500 bg-white cursor-pointer"
-            onClick={() => navigate("/profile")}
-          >
+      <div className="w-full h-[70px] flex justify-between items-center px-6 shadow-md shadow-gray-400 sticky top-0 left-0 bg-white z-20">
+        <div className="flex items-center gap-5">
+          <div className="relative w-14 h-14 rounded-full overflow-hidden bg-white">
             <img
               src={userData?.image || dp}
-              alt="User profile"
+              alt={userData?.name || userData?.userName}
               className="object-cover w-full h-full"
             />
-          </button>
+            {onlineUsers?.includes(userData?._id) && (
+              <span className="absolute bottom-1 right-1 w-3 h-3 rounded-full bg-green-500 shadow-md shadow-gray-500"></span>
+            )}
+          </div>
+          <h2 className="text-xl font-semibold text-gray-800">
+            {userData?.name || userData?.userName}
+          </h2>
         </div>
-
-        {/* Search Bar */}
-        <div className="flex items-center gap-4 overflow-x-auto pb-2">
-          {!search && (
-            <button
-              aria-label="Open search"
-              className="w-14 h-14 rounded-full bg-white shadow-lg shadow-gray-500 flex justify-center items-center cursor-pointer"
-              onClick={() => setSearch(true)}
-            >
-              <IoIosSearch className="w-6 h-6" />
-            </button>
-          )}
-          {search && (
-            <form
-              onSubmit={(e) => e.preventDefault()}
-              className="flex items-center gap-2 bg-white rounded-full px-5 py-3 shadow-lg shadow-gray-500 flex-grow"
-            >
-              <IoIosSearch className="w-6 h-6 text-gray-600" />
-              <input
-                type="text"
-                placeholder="Search users..."
-                className="flex-grow outline-none border-0 text-base"
-                onChange={(e) => setInput(e.target.value)}
-                value={input}
-                autoFocus
-              />
-              <button
-                type="button"
-                aria-label="Close search"
-                onClick={() => {
-                  setSearch(false);
-                  setInput("");
-                }}
-              >
-                <RxCross2 className="w-6 h-6 cursor-pointer text-gray-600" />
-              </button>
-            </form>
-          )}
-
-          {/* Online users preview (only when not searching) */}
-          {!search &&
-            otherUsers
-              ?.filter((user) => onlineUsers?.includes(user._id))
-              .map((user) => (
-                <button
-                  key={user._id}
-                  onClick={() => dispatch(setSelectedUser(user))}
-                  className="relative w-14 h-14 rounded-full overflow-hidden bg-white shadow-lg shadow-gray-500 flex justify-center items-center cursor-pointer"
-                  aria-label={`Chat with ${user.name || user.userName}`}
-                >
-                  <img
-                    src={user.image || dp}
-                    alt={user.name || user.userName}
-                    className="object-cover w-full h-full"
-                  />
-                  <span className="absolute bottom-1 right-1 w-3 h-3 rounded-full bg-green-500 shadow-md shadow-gray-500"></span>
-                </button>
-              ))}
+        <div className="flex items-center gap-2">
+          <button
+            aria-label="Search"
+            className="text-gray-800 hover:text-blue-600 text-3xl"
+            onClick={() => setSearch(!search)}
+          >
+            {search ? <RxCross2 /> : <IoIosSearch />}
+          </button>
         </div>
       </div>
 
       {/* Users List */}
-      <div className="h-[calc(100vh-20rem)] overflow-y-auto mt-5 px-6 flex flex-col gap-4">
-        {otherUsers?.map((user) => (
-          <button
+      <div className="w-full max-h-[calc(100vh-130px)] overflow-y-auto flex flex-col gap-4 px-4 pt-4 pb-8">
+        {sortedUsers.length === 0 && (
+          <p className="text-center text-gray-500">No users available</p>
+        )}
+        {sortedUsers.map((user) => (
+          <div
             key={user._id}
-            onClick={() => dispatch(setSelectedUser(user))}
-            className="flex items-center gap-4 bg-white rounded-full shadow-lg shadow-gray-500 p-2 hover:bg-[#78cae5] transition-colors duration-200"
-            aria-label={`Select chat with ${user.name || user.userName}`}
+            onClick={() => handleSelectUser(user)}
+            className={`flex items-center gap-4 cursor-pointer p-3 rounded-lg hover:bg-[#a0e9fc] ${
+              selectedUser?._id === user._id
+                ? "bg-[#20c7ff] text-white"
+                : "bg-white text-gray-900"
+            }`}
           >
-            <div className="relative w-14 h-14 rounded-full overflow-hidden bg-white shadow-lg shadow-gray-500 flex justify-center items-center">
+            <div className="relative w-14 h-14 rounded-full overflow-hidden bg-white">
               <img
                 src={user.image || dp}
                 alt={user.name || user.userName}
@@ -206,10 +220,15 @@ function SideBar() {
                 <span className="absolute bottom-1 right-1 w-3 h-3 rounded-full bg-green-500 shadow-md shadow-gray-500"></span>
               )}
             </div>
-            <h2 className="text-gray-800 font-semibold text-lg">
+            <h2 className="font-semibold text-lg truncate max-w-[120px]">
               {user.name || user.userName}
             </h2>
-          </button>
+            {unreadCounts?.[userData?._id]?.[user._id] > 0 && (
+              <span className="ml-auto bg-red-500 text-white rounded-full px-2 py-1 text-xs font-semibold select-none">
+                {unreadCounts[userData._id][user._id]}
+              </span>
+            )}
+          </div>
         ))}
       </div>
     </div>

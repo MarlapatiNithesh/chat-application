@@ -7,98 +7,147 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { serverUrl } from "../main";
 import { setUserData } from "../redux/userSlice";
+
 function Profile() {
-  let { userData } = useSelector((state) => state.user);
-  let dispatch = useDispatch();
-  let navigate = useNavigate();
-  let [name, setName] = useState(userData.name || "");
-  let [frontendImage, setFrontendImage] = useState(userData.image || dp);
-  let [backendImage, setBackendImage] = useState(null);
-  let image = useRef();
-  let [saving, setSaving] = useState(false);
+  const { userData } = useSelector((state) => state.user);
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+
+  const [name, setName] = useState(userData?.name || "");
+  const [frontendImage, setFrontendImage] = useState(userData?.image || dp);
+  const [backendImage, setBackendImage] = useState(null);
+  const [saving, setSaving] = useState(false);
+
+  const imageInputRef = useRef();
+
   const handleImage = (e) => {
-    let file = e.target.files[0];
-    setBackendImage(file);
-    setFrontendImage(URL.createObjectURL(file));
+    const file = e.target.files[0];
+    if (file) {
+      setBackendImage(file);
+      setFrontendImage(URL.createObjectURL(file));
+    }
   };
 
   const handleProfile = async (e) => {
     e.preventDefault();
     setSaving(true);
     try {
-      let formData = new FormData();
+      const formData = new FormData();
       formData.append("name", name);
       if (backendImage) {
         formData.append("image", backendImage);
       }
-      let result = await axios.put(`${serverUrl}/api/user/profile`, formData, {
+
+      const result = await axios.put(`${serverUrl}/api/user/profile`, formData, {
         withCredentials: true,
       });
-      setSaving(false);
+
       dispatch(setUserData(result.data));
       navigate("/");
     } catch (error) {
-      console.log(error);
+      console.error("Profile update failed:", error);
+      // Optionally show error notification here
+    } finally {
       setSaving(false);
     }
   };
+
   return (
-    <div className="w-full h-[100vh] bg-slate-200 flex flex-col justify-center items-center gap-[20px]">
-      <div
-        className="fixed top-[20px] left-[20px] cursor-pointer"
+    <main className="min-h-screen bg-slate-100 flex flex-col items-center justify-center px-4 py-8">
+      {/* Back Button */}
+      <button
+        aria-label="Go back"
         onClick={() => navigate("/")}
+        className="fixed top-5 left-5 p-2 rounded-full hover:bg-slate-300 focus:outline-none focus:ring-2 focus:ring-[#20c7ff]"
       >
-        <IoIosArrowRoundBack className="w-[50px] h-[50px] text-gray-600" />
-      </div>
+        <IoIosArrowRoundBack className="w-10 h-10 text-gray-700" />
+      </button>
+
+      {/* Profile Image */}
       <div
-        className=" bg-white rounded-full border-4 border-[#20c7ff] shadow-gray-400 shadow-lg  relative"
-        onClick={() => image.current.click()}
+        className="relative mb-8 cursor-pointer rounded-full border-4 border-[#20c7ff] shadow-lg shadow-gray-400"
+        onClick={() => imageInputRef.current.click()}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => e.key === "Enter" && imageInputRef.current.click()}
+        aria-label="Change profile picture"
       >
-        <div className="w-[200px] h-[200px] rounded-full overflow-hidden flex justify-center items-center">
-          <img src={frontendImage} alt="" className="h-[100%]" />
+        <div className="w-44 h-44 md:w-52 md:h-52 rounded-full overflow-hidden flex justify-center items-center bg-white">
+          <img
+            src={frontendImage}
+            alt={`${name || userData?.userName}'s profile`}
+            className="object-cover w-full h-full"
+            draggable={false}
+          />
         </div>
-        <div className="absolute bottom-4  text-gray-700 right-4 w-[35px] h-[35px] rounded-full bg-[#20c7ff] flex justify-center items-center shadow-gray-400 shadow-lg">
-          <IoCameraOutline className=" text-gray-700  w-[25px] h-[25px]" />
+        <div className="absolute bottom-3 right-3 w-9 h-9 md:w-10 md:h-10 rounded-full bg-[#20c7ff] flex justify-center items-center shadow-md shadow-gray-400">
+          <IoCameraOutline className="w-6 h-6 text-gray-700" />
         </div>
       </div>
+
+      {/* Hidden file input */}
+      <input
+        type="file"
+        accept="image/*"
+        ref={imageInputRef}
+        hidden
+        onChange={handleImage}
+      />
+
+      {/* Profile Form */}
       <form
-        className="w-[95%]  max-w-[500px] flex flex-col gap-[20px] items-center justify-center"
         onSubmit={handleProfile}
+        className="w-full max-w-md bg-white rounded-xl p-6 shadow-lg flex flex-col gap-6"
+        noValidate
       >
-        <input
-          type="file"
-          accept="image/*"
-          ref={image}
-          hidden
-          onChange={handleImage}
-        />
-        <input
-          type="text"
-          placeholder="Enter your name"
-          className="w-[90%] h-[50px] outline-none border-2 border-[#20c7ff] px-[20px] py-[10px] bg-[white] rounded-lg shadow-gray-400 shadow-lg text-gray-700 text-[19px]"
-          onChange={(e) => setName(e.target.value)}
-          value={name}
-        />
-        <input
-          type="text"
-          readOnly
-          className="w-[90%] h-[50px] outline-none border-2 border-[#20c7ff] px-[20px] py-[10px] bg-[white] rounded-lg shadow-gray-400 shadow-lg text-gray-400 text-[19px]"
-          value={userData?.userName}
-        />
-        <input
-          type="email"
-          readOnly
-          className="w-[90%] h-[50px] outline-none border-2 border-[#20c7ff] px-[20px] py-[10px] bg-[white] rounded-lg shadow-gray-400 shadow-lg text-gray-400 text-[19px]"
-          value={userData?.email}
-        />
+        <label htmlFor="name" className="block font-semibold text-gray-700">
+          Name
+          <input
+            id="name"
+            type="text"
+            placeholder="Enter your name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="mt-2 w-full px-4 py-3 border-2 border-[#20c7ff] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#20c7ff] text-gray-800 text-lg"
+            required
+          />
+        </label>
+
+        <label htmlFor="username" className="block font-semibold text-gray-400">
+          Username
+          <input
+            id="username"
+            type="text"
+            value={userData?.userName || ""}
+            readOnly
+            className="mt-2 w-full px-4 py-3 border-2 border-gray-300 rounded-lg bg-gray-100 text-gray-400 text-lg cursor-not-allowed"
+          />
+        </label>
+
+        <label htmlFor="email" className="block font-semibold text-gray-400">
+          Email
+          <input
+            id="email"
+            type="email"
+            value={userData?.email || ""}
+            readOnly
+            className="mt-2 w-full px-4 py-3 border-2 border-gray-300 rounded-lg bg-gray-100 text-gray-400 text-lg cursor-not-allowed"
+          />
+        </label>
+
         <button
-          className="px-[20px] py-[10px] bg-[#20c7ff] rounded-2xl shadow-gray-400 shadow-lg text-[20px] w-[200px] mt-[20px] font-semibold hover:shadow-inner"
+          type="submit"
           disabled={saving}
+          className={`mt-4 w-full py-3 rounded-xl font-semibold text-white shadow-lg transition ${
+            saving
+              ? "bg-[#a1d9ff] cursor-not-allowed"
+              : "bg-[#20c7ff] hover:bg-[#0da5e5] active:bg-[#187bbd]"
+          }`}
         >
           {saving ? "Saving..." : "Save Profile"}
         </button>
       </form>
-    </div>
+    </main>
   );
 }
 
