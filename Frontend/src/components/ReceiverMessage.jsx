@@ -1,28 +1,41 @@
-import React, { useEffect, useRef } from 'react'
-import dp from "../assets/dp.png"
-import { useSelector } from 'react-redux'
-function ReceiverMessage({image,message}) {
-  let scroll=useRef()
-  let {selectedUser}=useSelector(state=>state.user)
-  useEffect(()=>{
-    scroll?.current.scrollIntoView({behavior:"smooth"})
-  },[message,image])
-  
-  const handleImageScroll=()=>{
-    scroll?.current.scrollIntoView({behavior:"smooth"})
-  }
+import React, { useEffect, useRef } from "react";
+import dp from "../assets/dp.png";
+import { useSelector } from "react-redux";
+
+function ReceiverMessage({ image, message }) {
+  const scrollRef = useRef();
+  const { selectedUser } = useSelector((state) => state.user);
+
+  useEffect(() => {
+    scrollRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [message, image]);
+
+  const handleImageLoad = () => {
+    scrollRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
   return (
-    <div className='flex items-start gap-[10px]' >
-           <div className='w-[40px] h-[40px] rounded-full overflow-hidden flex justify-center items-center bg-white cursor-pointer shadow-gray-500 shadow-lg ' >
-         <img src={selectedUser.image || dp} alt="" className='h-[100%]'/>
-         </div>
-          <div ref={scroll} className='w-fit max-w-[500px] px-[20px] py-[10px]  bg-[rgb(23,151,194)] text-white text-[19px] rounded-tl-none rounded-2xl relative left-0  shadow-gray-400 shadow-lg gap-[10px] flex flex-col'>
-        {image &&  <img src={image} alt="" className='w-[150px] rounded-lg' onLoad={handleImageScroll}/>}
-       {message && <span >{message}</span>}
-       </div>
-     
+    <div className="w-full flex justify-start px-4">
+      <div className="flex items-end gap-2 max-w-[75%]" ref={scrollRef}>
+        <img
+          src={selectedUser?.image || dp}
+          alt="user"
+          className="w-8 h-8 rounded-full object-cover shadow"
+        />
+        <div className="flex flex-col items-start gap-1 p-3 bg-[#e4e6eb] rounded-2xl rounded-tl-none shadow-md text-black text-sm">
+          {image && (
+            <img
+              src={image}
+              alt="received"
+              className="w-48 h-auto max-h-60 object-cover rounded-xl"
+              onLoad={handleImageLoad}
+            />
+          )}
+          {message && <span className="break-words">{message}</span>}
         </div>
-  )
+      </div>
+    </div>
+  );
 }
 
-export default ReceiverMessage
+export default ReceiverMessage;

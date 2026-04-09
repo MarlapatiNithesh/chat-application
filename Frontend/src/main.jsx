@@ -4,17 +4,14 @@ import App from "./App.jsx";
 import { BrowserRouter } from "react-router-dom";
 import { Provider } from "react-redux";
 
-import { store, persistor } from "./redux/store.js"; // note persistor import
-import { PersistGate } from "redux-persist/integration/react";
+import { store } from "./redux/store.js"; // removed persistor import
 
-export const serverUrl = "http://65.0.97.103:3001";
+export const serverUrl = "http://localhost:3000";
 
 createRoot(document.getElementById("root")).render(
   <BrowserRouter>
     <Provider store={store}>
-      <PersistGate loading={<div>Loading...</div>} persistor={persistor}>
-        <App />
-      </PersistGate>
+      <App />
     </Provider>
   </BrowserRouter>
 );

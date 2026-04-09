@@ -5,63 +5,57 @@ const initialState = {
   otherUsers: [],
   selectedUser: null,
   onlineUsers: [],
-  unreadCounts: {},
-  lastActivity: {},
-  searchData: [],
-  socket: null, // ✅ added socket state
+  searchData: null,
+  socket: null,
+  loading: false,  // Added loading state
 };
 
 const userSlice = createSlice({
   name: "user",
   initialState,
   reducers: {
-    setUserData(state, action) {
+    setUserData: (state, action) => {
       state.userData = action.payload;
     },
-    clearUserData(state) {
-      state.userData = null;
-      state.selectedUser = null;
-      state.otherUsers = [];
-      state.onlineUsers = [];
-      state.unreadCounts = {};
-      state.lastActivity = {};
-      state.searchData = [];
-      state.socket = null; // ✅ clear socket on logout
+    setOtherUsers: (state, action) => {
+      state.otherUsers = action.payload;
     },
-    setOtherUsers(state, action) {
-      state.otherUsers = action.payload || [];
-    },
-    setSelectedUser(state, action) {
+    setSelectedUser: (state, action) => {
       state.selectedUser = action.payload;
     },
-    setOnlineUsers(state, action) {
-      state.onlineUsers = Array.isArray(action.payload) ? action.payload : [];
+    setOnlineUsers: (state, action) => {
+      state.onlineUsers = action.payload;
     },
-    setUnreadCounts(state, action) {
-      state.unreadCounts = action.payload || {};
+    setSearchData: (state, action) => {
+      state.searchData = action.payload;
     },
-    setLastActivity(state, action) {
-      state.lastActivity = action.payload || {};
-    },
-    setSearchData(state, action) {
-      state.searchData = action.payload || [];
-    },
-    setSocket(state, action) {
+    setSocket: (state, action) => {
       state.socket = action.payload;
+    },
+    setLoading: (state, action) => {  // New loading reducer
+      state.loading = action.payload;
+    },
+    clearUserData: (state) => {
+      state.userData = null;
+      state.otherUsers = [];
+      state.selectedUser = null;
+      state.onlineUsers = [];
+      state.searchData = null;
+      state.socket = null;
+      state.loading = false;
     },
   },
 });
 
 export const {
   setUserData,
-  clearUserData,
   setOtherUsers,
   setSelectedUser,
   setOnlineUsers,
-  setUnreadCounts,
-  setLastActivity,
   setSearchData,
-  setSocket, // ✅ now exported properly
+  setSocket,
+  setLoading,   // Export setLoading here
+  clearUserData,
 } = userSlice.actions;
 
 export default userSlice.reducer;
