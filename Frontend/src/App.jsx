@@ -1,11 +1,11 @@
 import React, { useEffect } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
+
 import useGetCurrentUser from "./customHook/getCurrentUser";
 import useGetOtherUsers from "./customHook/getOtherUsers";
-import { io } from "socket.io-client";
-import { serverUrl } from "./main";
 import { setOnlineUsers, setSocket } from "./redux/userSlice";
+import { initializeSocket, closeSocket } from "./socket";
 
 import SignUp from "./pages/SignUp";
 import Login from "./pages/Login";
@@ -13,40 +13,38 @@ import Home from "./pages/Home";
 import Profile from "./pages/Profile";
 
 function App() {
+  const dispatch = useDispatch();
+  const { userData, loading } = useSelector((state) => state.user);
+
   useGetCurrentUser();
   useGetOtherUsers();
 
-  const dispatch = useDispatch();
-  const { userData, loading, socket } = useSelector((state) => state.user);
-
-
   useEffect(() => {
-    // If no user, close socket and clear from redux
     if (!userData?._id) {
-      if (socket) {
-        socket.close();
-        dispatch(setSocket(null));
-      }
-      return; // exit early if no user
+      closeSocket();
+      return;
     }
 
-    // Create new socket connection with userId query param
-    const socketio = io(serverUrl, {
-      query: { userId: userData._id },
-    });
+    const socketInstance = initializeSocket(userData._id);
 
-    // Save socket instance in Redux store
-    dispatch(setSocket(socketio));
+    if (!socketInstance) {
+      console.error("Socket initialization failed: socketInstance is null");
+      return;
+    }
 
-    // Listen to online users event
-    socketio.on("getOnlineUsers", (users) => {
+    console.log("Socket initialized:", socketInstance);
+    console.log("Socket ID:", socketInstance.id);
+    dispatch(setSocket(socketInstance));
+
+    socketInstance.on("getOnlineUsers", (users) => {
       dispatch(setOnlineUsers(users));
     });
 
-    // Cleanup on unmount or when userData changes
     return () => {
-      socketio.close();
-      dispatch(setSocket(null));
+      if (socketInstance) {
+        socketInstance.off("getOnlineUsers"); // Remove listener on cleanup
+      }
+      closeSocket();
     };
   }, [userData, dispatch]);
 
@@ -62,19 +60,19 @@ function App() {
     <Routes>
       <Route
         path="/login"
-        element={!userData ? <Login /> : <Navigate to="/" />}
+        element={!userData ? <Login /> : <Navigate to="/" replace />}
       />
       <Route
         path="/signup"
-        element={!userData ? <SignUp /> : <Navigate to="/profile" />}
+        element={!userData ? <SignUp /> : <Navigate to="/profile" replace />}
       />
       <Route
         path="/"
-        element={userData ? <Home /> : <Navigate to="/login" />}
+        element={userData ? <Home /> : <Navigate to="/login" replace />}
       />
       <Route
         path="/profile"
-        element={userData ? <Profile /> : <Navigate to="/signup" />}
+        element={userData ? <Profile /> : <Navigate to="/signup" replace />}
       />
     </Routes>
   );
