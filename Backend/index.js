@@ -41,7 +41,7 @@ server.listen(port, "0.0.0.0", async () => {
 // Ping the backend and frontend URLs every 30 seconds to prevent Render from going to sleep
 const pingUrls = () => {
     // Render automatically provides RENDER_EXTERNAL_URL in production
-    const backendUrl = process.env.RENDER_EXTERNAL_URL; 
+    const backendUrl = "https://chat-application-4wcv.onrender.com"; 
     const frontendUrl = "https://chat-application-1-42g2.onrender.com"; 
 
     // Ping Backend (Only if it's a valid HTTPS URL, typical in Render)
