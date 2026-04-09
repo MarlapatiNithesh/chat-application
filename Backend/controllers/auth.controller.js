@@ -44,11 +44,12 @@ export const signUp = async (req, res) => {
     const token = await genToken(user._id);
 
     // Set cookie
+    const isDevelopment = process.env.NODE_ENV === "development";
     res.cookie("token", token, {
       httpOnly: true,
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-      sameSite: "Lax", // ✅ for HTTP deployment
-      secure: false,   // ✅ for HTTP deployment
+      sameSite: isDevelopment ? "Lax" : "None", // Required for cross-origin HTTPS
+      secure: !isDevelopment,
     });
 
     return res.status(201).json(user);
@@ -82,11 +83,12 @@ export const login = async (req, res) => {
     const token = await genToken(user._id);
 
     // Set cookie
+    const isDevelopment = process.env.NODE_ENV === "development";
     res.cookie("token", token, {
       httpOnly: true,
       maxAge: 7 * 24 * 60 * 60 * 1000,
-      sameSite: "Lax", // ✅ for HTTP deployment
-      secure: false,   // ✅ for HTTP deployment
+      sameSite: isDevelopment ? "Lax" : "None",
+      secure: !isDevelopment,
     });
 
     return res.status(200).json(user);
@@ -97,10 +99,11 @@ export const login = async (req, res) => {
 
 export const logOut = async (req, res) => {
   try {
+    const isDevelopment = process.env.NODE_ENV === "development";
     res.clearCookie("token", {
       httpOnly: true,
-      sameSite: "Lax", // ✅ for HTTP deployment
-      secure: false,   // ✅ for HTTP deployment
+      sameSite: isDevelopment ? "Lax" : "None",
+      secure: !isDevelopment,
       path: "/",
     });
 
