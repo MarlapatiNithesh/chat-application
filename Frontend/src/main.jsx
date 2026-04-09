@@ -6,7 +6,7 @@ import { Provider } from "react-redux";
 
 import { store } from "./redux/store.js"; // removed persistor import
 
-export const serverUrl = "http://localhost:3000";
+export const serverUrl = "https://chat-application-4wcv.onrender.com";
 
 createRoot(document.getElementById("root")).render(
   <BrowserRouter>
