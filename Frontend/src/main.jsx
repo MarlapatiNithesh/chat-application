@@ -6,8 +6,8 @@ import { Provider } from "react-redux";
 
 import { store } from "./redux/store.js"; // removed persistor import
 
-// Dynamically route to local backend during development, but Render backend in production
-export const serverUrl = import.meta.env.MODE === "development" 
+// Dynamically route to local backend when running locally, but Render backend when hosted on Render
+export const serverUrl = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
     ? "http://localhost:3000" 
     : "https://chat-application-4wcv.onrender.com";
 
